@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora de Porcentagem</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+        body {
+            background-color: #f4f6f9;
+            color: #333;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            width: 100%;
+            max-width: 500px;
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+        header {
+            background-color: #1a73e8;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        header h1 {
+            font-size: 1.25rem;
+            margin-bottom: 4px;
+        }
+        header p {
+            font-size: 0.85rem;
+            opacity: 0.9;
+        }
+        .content {
+            padding: 16px;
+        }
+        .form-group {
+            margin-bottom: 12px;
+        }
+        label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #555;
+            margin-bottom: 4px;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        input:focus {
+            border-color: #1a73e8;
+        }
+        .row {
+            display: flex;
+            gap: 10px;
+        }
+        .row .form-group {
+            flex: 1;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-primary {
+            background-color: #1a73e8;
+            color: white;
+            margin-top: 4px;
+        }
+        .btn-primary:active {
+            background-color: #1557b0;
+        }
+        .btn-success {
+            background-color: #34a853;
+            color: white;
+            margin-top: 10px;
+        }
+        .btn-success:active {
+            background-color: #2b8a43;
+        }
+        .list-container {
+            margin-top: 20px;
+            border-top: 1px solid #eee;
+            padding-top: 16px;
+        }
+        .list-container h2 {
+            font-size: 1rem;
+            margin-bottom: 12px;
+            color: #444;
+        }
+        .item-card {
+            background: #fafafa;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .item-info {
+            flex: 1;
+        }
+        .item-name {
+            font-weight: 600;
+            font-size: 0.95rem;
+            color: #222;
+        }
+        .item-details {
+            font-size: 0.85rem;
+            color: #666;
+            margin-top: 2px;
+        }
+        .item-result {
+            font-weight: bold;
+            color: #1a73e8;
+            font-size: 1.05rem;
+            text-align: right;
+        }
+        .btn-delete {
+            background: none;
+            border: none;
+            color: #d93025;
+            font-size: 1.1rem;
+            cursor: pointer;
+            padding: 4px 8px;
+            margin-left: 8px;
+        }
+        .summary-card {
+            background: #e8f0fe;
+            border: 1px solid #d2e3fc;
+            border-radius: 8px;
+            padding: 14px;
+            margin-top: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .summary-title {
+            font-weight: 700;
+            color: #174ea6;
+            font-size: 0.95rem;
+        }
+        .summary-values {
+            text-align: right;
+            font-size: 0.9rem;
+            color: #174ea6;
+        }
+        .empty-state {
+            text-align: center;
+            color: #888;
+            font-size: 0.85rem;
+            padding: 20px 0;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Calculadora de Porcentagem</h1>
+            <p>Gerenciamento de Juros Mensais</p>
+        </header>
+        <div class="content">
+            <form id="calcForm">
+                <div class="form-group">
+                    <label for="name">Nome</label>
+                    <input type="text" id="name" placeholder="Ex: Suriano" required>
+                </div>
+                <div class="row">
+                    <div class="form-group">
+                        <label for="value">Valor (R$)</label>
+                        <input type="number" id="value" step="0.01" placeholder="1000.00" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="percent">Porcentagem (%)</label>
+                        <input type="number" id="percent" step="0.01" placeholder="10" value="10" required>
+                    </div>
+                </div>
+                <button type="submit" class="btn-primary">Adicionar Nome</button>
+            </form>
+
+            <div class="list-container">
+                <h2>Registros</h2>
+                <div id="itemsList">
+                    <div class="empty-state">Nenhum registro adicionado ainda.</div>
+                </div>
+
+                <div id="summaryCard" class="summary-card" style="display: none;">
+                    <div>
+                        <div class="summary-title">Total Geral</div>
+                        <div style="font-size: 0.8rem; color: #174ea6;" id="sumBaseLabel">Base: R$ 0,00</div>
+                    </div>
+                    <div class="summary-values">
+                        <div>Juros Mensal: <strong id="sumInterest">R$ 0,00</strong></div>
+                    </div>
+                </div>
+
+                <button type="button" id="btnExport" class="btn-success" style="display: none;" onclick="exportToCSV()">Salvar como Planilha (CSV)</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let items = [
+            { name: "Suriano", value: 1000, percent: 10 },
+            { name: "Waldery", value: 2000, percent: 10 }
+        ];
+
+        const form = document.getElementById('calcForm');
+        const itemsList = document.getElementById('itemsList');
+        const summaryCard = document.getElementById('summaryCard');
+        const sumBaseLabel = document.getElementById('sumBaseLabel');
+        const sumInterest = document.getElementById('sumInterest');
+        const btnExport = document.getElementById('btnExport');
+
+        function render() {
+            itemsList.innerHTML = '';
+            
+            if (items.length === 0) {
+                itemsList.innerHTML = '<div class="empty-state">Nenhum registro adicionado ainda.</div>';
+                summaryCard.style.display = 'none';
+                btnExport.style.display = 'none';
+                return;
+            }
+
+            let totalValue = 0;
+            let totalInterest = 0;
+
+            items.forEach((item, index) => {
+                const interest = (item.value * item.percent) / 100;
+                totalValue += item.value;
+                totalInterest += interest;
+
+                const card = document.createElement('div');
+                card.className = 'item-card';
+                card.innerHTML = `
+                    <div class="item-info">
+                        <div class="item-name">${escapeHtml(item.name)}</div>
+                        <div class="item-details">Base: R$ ${item.value.toLocaleString('pt-BR', {minimumFractionDigits: 2})} | ${item.percent}%</div>
+                    </div>
+                    <div style="display: flex; align-items: center;">
+                        <div class="item-result">= R$ ${interest.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</div>
+                        <button class="btn-delete" onclick="removeItem(${index})" title="Remover">&times;</button>
+                    </div>
+                `;
+                itemsList.appendChild(card);
+            });
+
+            sumBaseLabel.textContent = `Total Base: R$ ${totalValue.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+            sumInterest.textContent = `R$ ${totalInterest.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+            summaryCard.style.display = 'flex';
+            btnExport.style.display = 'block';
+        }
+
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const name = document.getElementById('name').value.trim();
+            const value = parseFloat(document.getElementById('value').value);
+            const percent = parseFloat(document.getElementById('percent').value);
+
+            if (name && !isNaN(value) && !isNaN(percent)) {
+                items.push({ name, value, percent });
+                form.reset();
+                document.getElementById('percent').value = '10';
+                document.getElementById('name').focus();
+                render();
+            }
+        });
+
+        function removeItem(index) {
+            items.splice(index, 1);
+            render();
+        }
+
+        function exportToCSV() {
+            let csvContent = "data:text/csv;charset=utf-8,Nome,Valor Base (R$),Porcentagem (%),Juros Mensal (R$)\n";
+            
+            let totalValue = 0;
+            let totalInterest = 0;
+
+            items.forEach(item => {
+                const interest = (item.value * item.percent) / 100;
+                totalValue += item.value;
+                totalInterest += interest;
+                csvContent += `"${item.name}",${item.value},${item.percent},${interest.toFixed(2)}\n`;
+            });
+
+            csvContent += `"TOTAL",${totalValue},-,${totalInterest.toFixed(2)}\n`;
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "calculo_juros.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function escapeHtml(text) {
+            return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+
+        render();
+    </script>
+</body>
+</html>
