@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calculadora de Porcentagem</title>
+    <title>Calculadora de Porcentagem e Juros</title>
     <style>
         * {
             box-sizing: border-box;
@@ -174,6 +174,13 @@
             font-size: 0.85rem;
             padding: 20px 0;
         }
+        .info-msg {
+            font-size: 0.75rem;
+            color: #666;
+            margin-top: 6px;
+            text-align: center;
+            line-height: 1.3;
+        }
     </style>
 </head>
 <body>
@@ -218,16 +225,15 @@
                     </div>
                 </div>
 
-                <button type="button" id="btnExport" class="btn-success" style="display: none;" onclick="exportToCSV()">Salvar como Planilha (CSV)</button>
+                <button type="button" id="btnExport" class="btn-success" style="display: none;" onclick="saveFile()">Salvar Planilha no Celular</button>
+                <div id="infoMsg" class="info-msg" style="display: none;"></div>
             </div>
         </div>
     </div>
 
     <script>
-        let items = [
-            { name: "Suriano", value: 1000, percent: 10 },
-            { name: "Waldery", value: 2000, percent: 10 }
-        ];
+        // Inicialização em branco conforme solicitado
+        let items = [];
 
         const form = document.getElementById('calcForm');
         const itemsList = document.getElementById('itemsList');
@@ -235,6 +241,7 @@
         const sumBaseLabel = document.getElementById('sumBaseLabel');
         const sumInterest = document.getElementById('sumInterest');
         const btnExport = document.getElementById('btnExport');
+        const infoMsg = document.getElementById('infoMsg');
 
         function render() {
             itemsList.innerHTML = '';
@@ -243,6 +250,7 @@
                 itemsList.innerHTML = '<div class="empty-state">Nenhum registro adicionado ainda.</div>';
                 summaryCard.style.display = 'none';
                 btnExport.style.display = 'none';
+                infoMsg.style.display = 'none';
                 return;
             }
 
@@ -295,9 +303,8 @@
             render();
         }
 
-        function exportToCSV() {
-            let csvContent = "data:text/csv;charset=utf-8,Nome,Valor Base (R$),Porcentagem (%),Juros Mensal (R$)\n";
-            
+        async function saveFile() {
+            let csvContent = "Nome,Valor Base (R$),Porcentagem (%),Juros Mensal (R$)\n";
             let totalValue = 0;
             let totalInterest = 0;
 
@@ -310,13 +317,45 @@
 
             csvContent += `"TOTAL",${totalValue},-,${totalInterest.toFixed(2)}\n`;
 
-            const encodedUri = encodeURI(csvContent);
+            // Utiliza a File System Access API moderna se suportada no navegador mobile (Chrome Mobile / Android)
+            if ('showSaveFilePicker' in window) {
+                try {
+                    const opts = {
+                        suggestedName: 'calculo_juros.csv',
+                        types: [{
+                            description: 'Arquivo CSV (Planilha)',
+                            accept: {'text/csv': ['.csv']},
+                        }],
+                    };
+                    const handle = await window.showSaveFilePicker(opts);
+                    const writable = await handle.createWritable();
+                    await writable.write(csvContent);
+                    await writable.close();
+                    infoMsg.textContent = "Arquivo salvo com sucesso no local escolhido!";
+                    infoMsg.style.display = 'block';
+                    infoMsg.style.color = '#34a853';
+                    return;
+                } catch (err) {
+                    if (err.name !== 'AbortError') {
+                        console.log('File picker cancelado ou erro:', err);
+                    }
+                    return;
+                }
+            }
+
+            // Fallback clássico para navegadores mobile que não suportam seletor direto de pasta
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
             const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
+            link.setAttribute("href", url);
             link.setAttribute("download", "calculo_juros.csv");
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
+            
+            infoMsg.textContent = "Planilha gerada! Verifique a pasta 'Downloads' do seu celular.";
+            infoMsg.style.display = 'block';
+            infoMsg.style.color = '#1a73e8';
         }
 
         function escapeHtml(text) {
