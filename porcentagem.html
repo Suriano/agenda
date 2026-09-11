@@ -232,8 +232,8 @@
     </div>
 
     <script>
-        // Inicialização em branco conforme solicitado
-        let items = [];
+        // Carrega os dados salvos anteriormente no navegador (se houver)
+        let items = JSON.parse(localStorage.getItem('calc_juros_items')) || [];
 
         const form = document.getElementById('calcForm');
         const itemsList = document.getElementById('itemsList');
@@ -242,6 +242,11 @@
         const sumInterest = document.getElementById('sumInterest');
         const btnExport = document.getElementById('btnExport');
         const infoMsg = document.getElementById('infoMsg');
+
+        // Função para salvar os dados no armazenamento local
+        function saveData() {
+            localStorage.setItem('calc_juros_items', JSON.stringify(items));
+        }
 
         function render() {
             itemsList.innerHTML = '';
@@ -291,6 +296,7 @@
 
             if (name && !isNaN(value) && !isNaN(percent)) {
                 items.push({ name, value, percent });
+                saveData(); // Salva permanentemente
                 form.reset();
                 document.getElementById('percent').value = '10';
                 document.getElementById('name').focus();
@@ -300,6 +306,7 @@
 
         function removeItem(index) {
             items.splice(index, 1);
+            saveData(); // Atualiza os dados salvos
             render();
         }
 
@@ -317,7 +324,6 @@
 
             csvContent += `"TOTAL",${totalValue},-,${totalInterest.toFixed(2)}\n`;
 
-            // Utiliza a File System Access API moderna se suportada no navegador mobile (Chrome Mobile / Android)
             if ('showSaveFilePicker' in window) {
                 try {
                     const opts = {
@@ -343,7 +349,6 @@
                 }
             }
 
-            // Fallback clássico para navegadores mobile que não suportam seletor direto de pasta
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
             const link = document.createElement("a");
