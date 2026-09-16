@@ -129,6 +129,10 @@ button:hover {
     background: #1d4ed8;
 }
 
+#btn-google:hover {
+    background: #f3f4f6 !important;
+}
+
 #lista-carrinho {
     list-style: none;
     padding: 0;
