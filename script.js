@@ -1,6 +1,6 @@
 // Importando o Firebase SDK via CDN Modular ESM
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 // Configurações do seu projeto Firebase
@@ -19,6 +19,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+const googleProvider = new GoogleAuthProvider();
 
 let carrinho = JSON.parse(localStorage.getItem('carrinho')) || [];
 let usuarioLogado = null;
@@ -35,6 +36,7 @@ const btnLoginModal = document.getElementById('btn-login-modal');
 const btnLogout = document.getElementById('btn-logout');
 const btnFecharModal = document.getElementById('btn-fechar-modal');
 const btnAcaoAuth = document.getElementById('btn-acao-auth');
+const btnGoogle = document.getElementById('btn-google');
 const toggleAuthMode = document.getElementById('toggle-auth-mode');
 const tituloAuth = document.getElementById('titulo-auth');
 const inputEmail = document.getElementById('auth-email');
@@ -94,12 +96,26 @@ function traduzirErroFirebase(errorCode) {
             return 'E-mail ou senha incorretos. Verifique seus dados.';
         case 'auth/too-many-requests':
             return 'Muitas tentativas malsucedidas. Tente novamente mais tarde.';
+        case 'auth/popup-closed-by-user':
+            return 'A janela de login do Google foi fechada antes de concluir.';
         default:
             return 'Ocorreu um erro na autenticação: ' + errorCode;
     }
 }
 
-// Ação de Login / Cadastro com tratamento de erros amigável
+// Ação de Login com Google (Gmail)
+btnGoogle.addEventListener('click', async () => {
+    try {
+        await signInWithPopup(auth, googleProvider);
+        alert('Login com Google realizado com sucesso!');
+        modalLogin.style.display = 'none';
+    } catch (error) {
+        const mensagemAmigavel = traduzirErroFirebase(error.code);
+        alert(mensagemAmigavel);
+    }
+});
+
+// Ação de Login / Cadastro por E-mail e Senha
 btnAcaoAuth.addEventListener('click', async () => {
     const email = inputEmail.value.trim();
     const senha = inputSenha.value.trim();
@@ -219,7 +235,7 @@ btnFinalizar.addEventListener('click', async () => {
             criadoEm: serverTimestamp()
         });
 
-        const minhaChavePix = "28127477818";
+        const minhaChavePix = "28127477819";
         const meuNome = "Anderson Pinheiro Suriano";
         const minhaCidade = "SAO PAULO";
         const payloadPix = gerarPayloadPix(minhaChavePix, meuNome, minhaCidade, valorTotalStr, idTransacao);
