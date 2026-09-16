@@ -63,12 +63,32 @@ function removerItem(index) {
     atualizarCarrinho();
 }
 
-btnFinalizar.addEventListener('click', () => {
+btnFinalizar.addEventListener('click', async () => {
     if (carrinho.length === 0) {
         alert('Seu carrinho está vazio!');
         return;
     }
-    alert('Compra finalizada com sucesso! O total foi R$ ' + valorTotal.textContent);
-    carrinho = [];
-    atualizarCarrinho();
+
+    try {
+        // Envia o carrinho para o seu backend
+        const resposta = await fetch('http://localhost:3000/criar-preferencia', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ itens: carrinho })
+        });
+
+        const dados = await resposta.json();
+
+        if (dados.init_point) {
+            // Redireciona o usuário para o ambiente de pagamento seguro do Mercado Pago
+            window.location.href = dados.init_point;
+        } else {
+            alert('Erro ao gerar o pagamento.');
+        }
+    } catch (error) {
+        console.error('Erro:', error);
+        alert('Não foi possível conectar ao servidor de pagamento.');
+    }
 });
