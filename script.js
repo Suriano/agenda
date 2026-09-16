@@ -121,32 +121,56 @@ function gerarPayloadPix(chavePix, nomeRecebedor, cidadeRecebedor, valor, identi
 
 
 
-btnFinalizar.addEventListener('click', async () => {
+// No seu script.js, adapte o botão finalizar:
+btnFinalizar.addEventListener('click', () => {
     if (carrinho.length === 0) {
         alert('Seu carrinho está vazio!');
         return;
     }
 
-    try {
-        // Envia o carrinho para o seu backend
-        const resposta = await fetch('http://localhost:3000/criar-preferencia', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ itens: carrinho })
-        });
+    const valorTotalStr = document.getElementById('valor-total').textContent;
+    
+    // Insira seus dados reais aqui:
+    const minhaChavePix = "12345678900"; // Seu CPF (somente números) ou chave
+    const meuNome = "SEU NOME COMPLETO";  // Nome da sua conta bancária
+    const minhaCidade = "SAO PAULO";     // Sua cidade
+    const idTransacao = "PEDIDO" + Math.floor(Math.random() * 1000);
 
-        const dados = await resposta.json();
+    // Gera a string do Pix Copia e Cola
+    const payloadPix = gerarPayloadPix(minhaChavePix, meuNome, minhaCidade, valorTotalStr, idTransacao);
 
-        if (dados.init_point) {
-            // Redireciona o usuário para o ambiente de pagamento seguro do Mercado Pago
-            window.location.href = dados.init_point;
-        } else {
-            alert('Erro ao gerar o pagamento.');
-        }
-    } catch (error) {
-        console.error('Erro:', error);
-        alert('Não foi possível conectar ao servidor de pagamento.');
-    }
+    // Cria um modal ou exibe na tela os dados do Pix para o cliente pagar
+    mostrarTelaPagamentoPix(payloadPix, valorTotalStr);
 });
+
+function mostrarTelaPagamentoPix(payload, valor) {
+    // Cria uma caixa de pagamento na tela dinamicamente
+    const modalDiv = document.createElement('div');
+    modalDiv.style.cssText = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); display:flex; justify-content:center; align-items:center; z-index:1000;";
+    
+    modalDiv.innerHTML = `
+        style="background:white; padding:30px; border-radius:12px; text-align:center; max-width:400px; width:90%;">
+            <h3>Pague via Pix</h3>
+            <p>Valor: <strong>R$ ${valor}</strong></p>
+            <div id="qrcode-container" style="margin: 15px 0; display:flex; justify-content:center;"></div>
+            <p style="font-size: 12px; color: #666;">Escaneie o QR Code acima ou copie o código abaixo:</p>
+            <textarea readonly style="width:100%; height:60px; font-size:11px; margin-bottom:10px;">${payload}</textarea>
+            <button id="btn-fechar-pix" style="background:#dc2626; width:100%;">Fechar / Já Paguei</button>
+        </div>
+    `;
+
+    document.body.appendChild(modalDiv);
+
+    // Desenha o QR Code visualmente usando a biblioteca importada
+    new QRCode(document.getElementById("qrcode-container"), {
+        text: payload,
+        width: 200,
+        height: 200
+    });
+
+    document.getElementById('btn-fechar-pix').addEventListener('click', () => {
+        modalDiv.remove();
+        carrinho = [];
+        atualizarCarrinho();
+    });
+}
