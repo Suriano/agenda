@@ -3,17 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-     <title>Carrinho de Compras</title>
+    <title>Minha Loja Virtual</title>
     <!-- Vinculando o CSS -->
     <link rel="stylesheet" href="style.css">
-
+    <!-- Biblioteca de QR Code -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 <body>
 
     <header>
         <h1>Minha Loja Virtual</h1>
-        <div id="carrinho-icone">🛒 Carrinho (<span id="contador-carrinho">0</span>)</div>
+        <div class="user-area">
+            <span id="user-info" style="display:none; font-size: 14px; margin-right: 10px;">Olá, <strong id="user-email"></strong></span>
+            <button id="btn-login-modal" style="padding: 6px 12px; font-size: 13px;">Entrar / Cadastrar</button>
+            <button id="btn-logout" style="display:none; background: #dc2626; padding: 6px 12px; font-size: 13px;">Sair</button>
+            <div id="carrinho-icone" style="display:inline-block; margin-left: 15px;">🛒 Carrinho (<span id="contador-carrinho">0</span>)</div>
+        </div>
     </header>
 
     <main class="container">
@@ -21,33 +26,30 @@
         <section class="produtos">
             <h2>Produtos</h2>
             
-            <!-- Exemplo de como deve ficar cada produto no HTML -->
-<div class="produto" data-id="1" data-nome="Camiseta HTML" data-preco="49.90" data-img="img/3.jpg">
-    <img src="img/3.jpg" alt="Camiseta HTML" class="produto-img">
-    <div class="produto-info">
-        <h3>Camiseta HTML</h3>
-        <p>R$ 49,90</p>
-    </div>
-    <button class="btn-comprar">Comprar</button>
-</div>
+            <div class="produto" data-id="1" data-nome="Camiseta HTML" data-preco="49.90" data-img="img/3.jpg">
+                <img src="img/3.jpg" alt="Camiseta HTML" class="produto-img">
+                <div class="produto-info">
+                    <h3>Camiseta HTML</h3>
+                    <p>R$ 49,90</p>
+                </div>
+                <button class="btn-comprar">Comprar</button>
+            </div>
 
-            <!-- Produto 2 -->
-            <!-- Exemplo de como deve ficar cada produto no HTML -->
-<div class="produto" data-id="2" data-nome="Camiseta HTML" data-preco="49.90" data-img="img/2.jpg">
-    <img src="img/2.jpg" alt="Camiseta HTML" class="produto-img">
-    <div class="produto-info">
-        <h3>Camiseta HTML</h3>
-        <p>R$ 49,90</p>
-    </div>
-    <button class="btn-comprar">Comprar</button>
-</div>
+            <div class="produto" data-id="2" data-nome="Camiseta CSS" data-preco="49.90" data-img="img/2.jpg">
+                <img src="img/2.jpg" alt="Camiseta CSS" class="produto-img">
+                <div class="produto-info">
+                    <h3>Camiseta CSS</h3>
+                    <p>R$ 49,90</p>
+                </div>
+                <button class="btn-comprar">Comprar</button>
+            </div>
         </section>
 
         <!-- Carrinho de Compras -->
         <section class="carrinho">
             <h2>Seu Carrinho</h2>
             <ul id="lista-carrinho">
-                <!-- Os itens adicionados aparecerão aqui via JavaScript -->
+                <!-- Itens adicionados via JS -->
             </ul>
             <div class="total">
                 <p>Total: R$ <span id="valor-total">0.00</span></p>
@@ -56,7 +58,20 @@
         </section>
     </main>
 
+    <!-- Modal de Login / Cadastro -->
+    <div id="modal-login" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); justify-content:center; align-items:center; z-index:2000;">
+        <div style="background:white; padding:30px; border-radius:12px; width:90%; max-width:380px; box-shadow:0 10px 25px rgba(0,0,0,0.2);">
+            <h3 id="titulo-auth" style="margin-bottom:15px; font-size:20px;">Entrar na Loja</h3>
+            <input type="email" id="auth-email" placeholder="E-mail" style="width:100%; padding:10px; margin-bottom:10px; border:1px solid #d1d5db; border-radius:6px;" />
+            <input type="password" id="auth-senha" placeholder="Senha" style="width:100%; padding:10px; margin-bottom:15px; border:1px solid #d1d5db; border-radius:6px;" />
+            
+            <button id="btn-acao-auth" style="width:100%; margin-bottom:10px;">Entrar</button>
+            <p id="toggle-auth-mode" style="text-align:center; font-size:13px; color:#2563eb; cursor:pointer; margin-bottom:10px;">Não tem uma conta? Cadastre-se</p>
+            <button id="btn-fechar-modal" style="width:100%; background:#6b7280;">Cancelar</button>
+        </div>
+    </div>
+
     <!-- Vinculando o JavaScript no final da página -->
-    <script src="script.js"></script>
+    <script type="module" src="script.js"></script>
 </body>
 </html>
