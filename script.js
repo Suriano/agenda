@@ -12,13 +12,12 @@ botoesComprar.forEach(botao => {
         const id = produtoDiv.getAttribute('data-id');
         const nome = produtoDiv.getAttribute('data-nome');
         const preco = parseFloat(produtoDiv.getAttribute('data-preco'));
-        const imagem = produtoDiv.getAttribute('data-img'); // Pega a imagem
+        const imagem = produtoDiv.getAttribute('data-img');
 
         adicionarAoCarrinho(id, nome, preco, imagem);
     });
 });
 
-// Adicionamos o parâmetro 'imagem' na função
 function adicionarAoCarrinho(id, nome, preco, imagem) {
     const itemExistente = carrinho.find(item => item.id === id);
 
@@ -41,8 +40,6 @@ function atualizarCarrinho() {
         quantidadeTotal += item.quantidade;
 
         const li = document.createElement('li');
-        
-        // Incluímos a tag <img> dentro do HTML gerado do carrinho
         li.innerHTML = `
             <div class="item-info">
                 <img src="${item.imagem}" alt="${item.nome}" class="carrinho-img">
@@ -50,7 +47,6 @@ function atualizarCarrinho() {
             </div>
             <button onclick="removerItem(${index})">❌</button>
         `;
-        
         listaCarrinho.appendChild(li);
     });
 
@@ -63,10 +59,8 @@ function removerItem(index) {
     atualizarCarrinho();
 }
 
-
 // Função para gerar o código Copia e Cola do Pix Estático
 function gerarPayloadPix(chavePix, nomeRecebedor, cidadeRecebedor, valor, identificador) {
-    // Função auxiliar para formatar os campos do padrão Pix (EMV)
     const formatField = (id, value) => {
         const len = String(value.length).padStart(2, '0');
         return `${id}${len}${value}`;
@@ -78,7 +72,7 @@ function gerarPayloadPix(chavePix, nomeRecebedor, cidadeRecebedor, valor, identi
     const merchantAccount = formatField('26', gui + key + desc);
     
     const merchantCategoryCode = formatField('52', '0000');
-    const currency = formatField('53', '986'); // Real brasileiro
+    const currency = formatField('53', '986');
     const amount = formatField('54', Number(valor).toFixed(2));
     const country = formatField('58', 'BR');
     const merchantName = formatField('59', nomeRecebedor);
@@ -97,9 +91,8 @@ function gerarPayloadPix(chavePix, nomeRecebedor, cidadeRecebedor, valor, identi
         merchantName + 
         merchantCity + 
         additionalData + 
-        '6304'; // CRC16 (checksum simplificado)
+        '6304';
 
-    // Cálculo do CRC16 do Pix (padrão BCC)
     function calcularCRC16(str) {
         let crc = 0xFFFF;
         for (let c = 0; c < str.length; c++) {
@@ -119,9 +112,7 @@ function gerarPayloadPix(chavePix, nomeRecebedor, cidadeRecebedor, valor, identi
     return payload + calcularCRC16(payload);
 }
 
-
-
-// No seu script.js, adapte o botão finalizar:
+// Finalizar Compra e Exibir o Modal Pix Bonito
 btnFinalizar.addEventListener('click', () => {
     if (carrinho.length === 0) {
         alert('Seu carrinho está vazio!');
@@ -130,44 +121,55 @@ btnFinalizar.addEventListener('click', () => {
 
     const valorTotalStr = document.getElementById('valor-total').textContent;
     
-    // Insira seus dados reais aqui:
-    const minhaChavePix = "28127477818"; // Seu CPF (somente números) ou chave
-    const meuNome = "Anderson Pinheiro Suriano";  // Nome da sua conta bancária
-    const minhaCidade = "SAO PAULO";     // Sua cidade
+    const minhaChavePix = "28127477818"; // Seu CPF
+    const meuNome = "Anderson Pinheiro Suriano";
+    const minhaCidade = "SAO PAULO";
     const idTransacao = "PEDIDO" + Math.floor(Math.random() * 1000);
 
-    // Gera a string do Pix Copia e Cola
     const payloadPix = gerarPayloadPix(minhaChavePix, meuNome, minhaCidade, valorTotalStr, idTransacao);
 
-    // Cria um modal ou exibe na tela os dados do Pix para o cliente pagar
     mostrarTelaPagamentoPix(payloadPix, valorTotalStr);
 });
 
 function mostrarTelaPagamentoPix(payload, valor) {
-    // Cria uma caixa de pagamento na tela dinamicamente
     const modalDiv = document.createElement('div');
-    modalDiv.style.cssText = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); display:flex; justify-content:center; align-items:center; z-index:1000;";
+    modalDiv.style.cssText = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); display:flex; justify-content:center; align-items:center; z-index:1000; font-family:'Inter', sans-serif;";
     
     modalDiv.innerHTML = `
-        style="background:white; padding:30px; border-radius:12px; text-align:center; max-width:400px; width:90%;">
-            <h3>Pague via Pix</h3>
-            <p>Valor: <strong>R$ ${valor}</strong></p>
-            <div id="qrcode-container" style="margin: 15px 0; display:flex; justify-content:center;"></div>
-            <p style="font-size: 12px; color: #666;">Escaneie o QR Code acima ou copie o código abaixo:</p>
-            <textarea readonly style="width:100%; height:60px; font-size:11px; margin-bottom:10px;">${payload}</textarea>
-            <button id="btn-fechar-pix" style="background:#dc2626; width:100%;">Fechar / Já Paguei</button>
+        <div style="background:white; padding:30px; border-radius:16px; text-align:center; max-width:400px; width:90%; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
+            <h3 style="margin-bottom: 10px; color: #111; font-size: 20px;">Pague com Pix</h3>
+            <p style="color: #666; font-size: 14px; margin-bottom: 15px;">Total a pagar: <strong style="color: #059669; font-size: 18px;">R$ ${valor}</strong></p>
+            
+            <div id="qrcode-container" style="margin: 15px auto; display:flex; justify-content:center; background: #f9fafb; padding: 15px; border-radius: 12px; border: 1px solid #e5e7eb; width: fit-content;"></div>
+            
+            <p style="font-size: 12px; color: #4b5563; margin-bottom: 8px;">Escaneie o QR Code com o app do seu banco ou copie o código abaixo:</p>
+            
+            <input type="text" id="pix-copia-cola" value="${payload}" readonly style="width:100%; padding: 10px; font-size: 12px; margin-bottom:10px; border: 1px solid #d1d5db; border-radius: 6px; background: #f3f4f6; text-align: center;" />
+            
+            <button id="btn-copiar" style="background: #2563eb; color: white; border: none; padding: 10px; width: 100%; border-radius: 6px; font-weight: 600; cursor: pointer; margin-bottom: 8px;">📋 Copiar Código Pix</button>
+            
+            <button id="btn-fechar-pix" style="background: #dc2626; color: white; border: none; padding: 10px; width: 100%; border-radius: 6px; font-weight: 600; cursor: pointer;">Fechar / Já Paguei</button>
         </div>
     `;
 
     document.body.appendChild(modalDiv);
 
-    // Desenha o QR Code visualmente usando a biblioteca importada
+    // Desenha o QR Code
     new QRCode(document.getElementById("qrcode-container"), {
         text: payload,
-        width: 200,
-        height: 200
+        width: 180,
+        height: 180
     });
 
+    // Ação do botão Copiar
+    document.getElementById('btn-copiar').addEventListener('click', () => {
+        const inputCopia = document.getElementById('pix-copia-cola');
+        inputCopia.select();
+        navigator.clipboard.writeText(inputCopia.value);
+        alert('Código Pix copiado com sucesso!');
+    });
+
+    // Ação de fechar e limpar carrinho
     document.getElementById('btn-fechar-pix').addEventListener('click', () => {
         modalDiv.remove();
         carrinho = [];
