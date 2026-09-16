@@ -3,15 +3,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-// COLE AQUI AS CONFIGURAÇÕES DO SEU PROJETO FIREBASE
-// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
-
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+// Configurações do seu projeto Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyDDPLoikLfkFx1C_PZLRyVWXPtP6i9weoU",
   authDomain: "pizzariasuriano.firebaseapp.com",
@@ -24,7 +16,6 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
@@ -88,7 +79,27 @@ toggleAuthMode.addEventListener('click', () => {
     }
 });
 
-// Ação de Login / Cadastro
+// Função para traduzir os códigos de erro do Firebase Auth
+function traduzirErroFirebase(errorCode) {
+    switch (errorCode) {
+        case 'auth/email-already-in-use':
+            return 'Este e-mail já está cadastrado em outra conta.';
+        case 'auth/invalid-email':
+            return 'O formato do e-mail digitado é inválido.';
+        case 'auth/weak-password':
+            return 'A senha é muito fraca. Escolha uma senha com pelo menos 6 caracteres.';
+        case 'auth/user-not-found':
+        case 'auth/wrong-password':
+        case 'auth/invalid-credential':
+            return 'E-mail ou senha incorretos. Verifique seus dados.';
+        case 'auth/too-many-requests':
+            return 'Muitas tentativas malsucedidas. Tente novamente mais tarde.';
+        default:
+            return 'Ocorreu um erro na autenticação: ' + errorCode;
+    }
+}
+
+// Ação de Login / Cadastro com tratamento de erros amigável
 btnAcaoAuth.addEventListener('click', async () => {
     const email = inputEmail.value.trim();
     const senha = inputSenha.value.trim();
@@ -110,7 +121,8 @@ btnAcaoAuth.addEventListener('click', async () => {
         inputEmail.value = '';
         inputSenha.value = '';
     } catch (error) {
-        alert('Erro: ' + error.message);
+        const mensagemAmigavel = traduzirErroFirebase(error.code);
+        alert(mensagemAmigavel);
     }
 });
 
@@ -215,7 +227,7 @@ btnFinalizar.addEventListener('click', async () => {
         mostrarTelaPagamentoPix(payloadPix, valorTotalStr);
 
     } catch (e) {
-        alert('Erro ao registrar o pedido: ' + e.message);
+        alert('Erro ao registrar o pedido no banco de dados: ' + e.message);
     }
 });
 
