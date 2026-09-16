@@ -1,5 +1,24 @@
-// Carrega o carrinho salvo no navegador (localStorage) ao abrir a página
+// Importando o Firebase SDK via CDN Modular ESM
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+// COLE AQUI AS CONFIGURAÇÕES DO SEU PROJETO FIREBASE
+const firebaseConfig = {
+    apiKey: "SUA_API_KEY",
+    authDomain: "SEU_PROJETO.firebaseapp.com",
+    projectId: "SEU_PROJETO_ID",
+    storageBucket: "SEU_PROJETO.appspot.com",
+    messagingSenderId: "SEU_SENDER_ID",
+    appId: "SEU_APP_ID"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
 let carrinho = JSON.parse(localStorage.getItem('carrinho')) || [];
+let usuarioLogado = null;
 
 const botoesComprar = document.querySelectorAll('.btn-comprar');
 const listaCarrinho = document.getElementById('lista-carrinho');
@@ -7,9 +26,89 @@ const valorTotal = document.getElementById('valor-total');
 const contadorCarrinho = document.getElementById('contador-carrinho');
 const btnFinalizar = document.getElementById('btn-finalizar');
 
-// Atualiza a tela imediatamente com os itens carregados do armazenamento
+// Elementos da UI de Autenticação
+const modalLogin = document.getElementById('modal-login');
+const btnLoginModal = document.getElementById('btn-login-modal');
+const btnLogout = document.getElementById('btn-logout');
+const btnFecharModal = document.getElementById('btn-fechar-modal');
+const btnAcaoAuth = document.getElementById('btn-acao-auth');
+const toggleAuthMode = document.getElementById('toggle-auth-mode');
+const tituloAuth = document.getElementById('titulo-auth');
+const inputEmail = document.getElementById('auth-email');
+const inputSenha = document.getElementById('auth-senha');
+const spanUserInfo = document.getElementById('user-info');
+const spanUserEmail = document.getElementById('user-email');
+
+let modoCadastro = false;
+
 atualizarCarrinho();
 
+// Monitorar estado de autenticação do usuário
+onAuthStateChanged(auth, (user) => {
+    if (user) {
+        usuarioLogado = user;
+        spanUserEmail.textContent = user.email;
+        spanUserInfo.style.display = 'inline';
+        btnLoginModal.style.display = 'none';
+        btnLogout.style.display = 'inline-block';
+    } else {
+        usuarioLogado = null;
+        spanUserInfo.style.display = 'none';
+        btnLoginModal.style.display = 'inline-block';
+        btnLogout.style.display = 'none';
+    }
+});
+
+// Controle do Modal de Login
+btnLoginModal.addEventListener('click', () => modalLogin.style.display = 'flex');
+btnFecharModal.addEventListener('click', () => modalLogin.style.display = 'none');
+
+toggleAuthMode.addEventListener('click', () => {
+    modoCadastro = !modoCadastro;
+    if (modoCadastro) {
+        tituloAuth.textContent = "Criar Nova Conta";
+        btnAcaoAuth.textContent = "Cadastrar";
+        toggleAuthMode.textContent = "Já tem uma conta? Entrar";
+    } else {
+        tituloAuth.textContent = "Entrar na Loja";
+        btnAcaoAuth.textContent = "Entrar";
+        toggleAuthMode.textContent = "Não tem uma conta? Cadastre-se";
+    }
+});
+
+// Ação de Login / Cadastro
+btnAcaoAuth.addEventListener('click', async () => {
+    const email = inputEmail.value.trim();
+    const senha = inputSenha.value.trim();
+
+    if (!email || !senha) {
+        alert('Preencha e-mail e senha!');
+        return;
+    }
+
+    try {
+        if (modoCadastro) {
+            await createUserWithEmailAndPassword(auth, email, senha);
+            alert('Conta criada com sucesso!');
+        } else {
+            await signInWithEmailAndPassword(auth, email, senha);
+            alert('Login realizado com sucesso!');
+        }
+        modalLogin.style.display = 'none';
+        inputEmail.value = '';
+        inputSenha.value = '';
+    } catch (error) {
+        alert('Erro: ' + error.message);
+    }
+});
+
+// Ação de Logout
+btnLogout.addEventListener('click', async () => {
+    await signOut(auth);
+    alert('Você saiu da sua conta.');
+});
+
+// Adicionar Produtos
 botoesComprar.forEach(botao => {
     botao.addEventListener('click', (evento) => {
         const produtoDiv = evento.target.parentElement;
@@ -58,18 +157,57 @@ function atualizarCarrinho() {
     contadorCarrinho.textContent = quantidadeTotal;
 }
 
-// Salva as alterações no localStorage do navegador e atualiza a interface
 function salvarESincronizar() {
     localStorage.setItem('carrinho', JSON.stringify(carrinho));
     atualizarCarrinho();
 }
 
-function removerItem(index) {
+// Torna a função global para o botão ❌ funcionar no HTML gerado
+window.removerItem = function(index) {
     carrinho.splice(index, 1);
     salvarESincronizar();
 }
 
-// Função para gerar o código Copia e Cola do Pix Estático
+// Finalizar Compra e Salvar no Firestore
+btnFinalizar.addEventListener('click', async () => {
+    if (carrinho.length === 0) {
+        alert('Seu carrinho está vazio!');
+        return;
+    }
+
+    if (!usuarioLogado) {
+        alert('Você precisa estar logado para finalizar a compra!');
+        modalLogin.style.display = 'flex';
+        return;
+    }
+
+    const valorTotalStr = document.getElementById('valor-total').textContent;
+    const idTransacao = "PEDIDO" + Math.floor(Math.random() * 10000);
+
+    try {
+        // Salvando o pedido vinculado ao UID do usuário logado no Firestore
+        await addDoc(collection(db, "pedidos"), {
+            userId: usuarioLogado.uid,
+            userEmail: usuarioLogado.email,
+            itens: carrinho,
+            total: parseFloat(valorTotalStr),
+            status: "Aguardando Pagamento",
+            criadoEm: serverTimestamp()
+        });
+
+        const minhaChavePix = "28127477818";
+        const meuNome = "Anderson Pinheiro Suriano";
+        const minhaCidade = "SAO PAULO";
+        const payloadPix = gerarPayloadPix(minhaChavePix, meuNome, minhaCidade, valorTotalStr, idTransacao);
+
+        mostrarTelaPagamentoPix(payloadPix, valorTotalStr);
+
+    } catch (e) {
+        alert('Erro ao registrar o pedido: ' + e.message);
+    }
+});
+
+// Função para gerar o código Pix Copia e Cola
 function gerarPayloadPix(chavePix, nomeRecebedor, cidadeRecebedor, valor, identificador) {
     const formatField = (id, value) => {
         const len = String(value.length).padStart(2, '0');
@@ -122,25 +260,6 @@ function gerarPayloadPix(chavePix, nomeRecebedor, cidadeRecebedor, valor, identi
     return payload + calcularCRC16(payload);
 }
 
-// Finalizar Compra e Exibir o Modal Pix
-btnFinalizar.addEventListener('click', () => {
-    if (carrinho.length === 0) {
-        alert('Seu carrinho está vazio!');
-        return;
-    }
-
-    const valorTotalStr = document.getElementById('valor-total').textContent;
-    
-    const minhaChavePix = "28127477819"; // Seu CPF
-    const meuNome = "Anderson Pinheiro Suriano";
-    const minhaCidade = "SAO PAULO";
-    const idTransacao = "PEDIDO" + Math.floor(Math.random() * 1000);
-
-    const payloadPix = gerarPayloadPix(minhaChavePix, meuNome, minhaCidade, valorTotalStr, idTransacao);
-
-    mostrarTelaPagamentoPix(payloadPix, valorTotalStr);
-});
-
 function mostrarTelaPagamentoPix(payload, valor) {
     const modalDiv = document.createElement('div');
     modalDiv.style.cssText = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); display:flex; justify-content:center; align-items:center; z-index:1000; font-family:'Inter', sans-serif;";
@@ -152,7 +271,7 @@ function mostrarTelaPagamentoPix(payload, valor) {
             
             <div id="qrcode-container" style="margin: 15px auto; display:flex; justify-content:center; background: #f9fafb; padding: 15px; border-radius: 12px; border: 1px solid #e5e7eb; width: fit-content;"></div>
             
-            <p style="font-size: 12px; color: #4b5563; margin-bottom: 8px;">Escaneie o QR Code com o app do seu banco ou copie o código abaixo:</p>
+            <p style="font-size: 12px; color: #4b5563; margin-bottom: 8px;">Escaneie o QR Code com o app do seu banco ou copie o código:</p>
             
             <input type="text" id="pix-copia-cola" value="${payload}" readonly style="width:100%; padding: 10px; font-size: 12px; margin-bottom:10px; border: 1px solid #d1d5db; border-radius: 6px; background: #f3f4f6; text-align: center;" />
             
@@ -164,14 +283,12 @@ function mostrarTelaPagamentoPix(payload, valor) {
 
     document.body.appendChild(modalDiv);
 
-    // Desenha o QR Code
     new QRCode(document.getElementById("qrcode-container"), {
         text: payload,
         width: 180,
         height: 180
     });
 
-    // Ação do botão Copiar
     document.getElementById('btn-copiar').addEventListener('click', () => {
         const inputCopia = document.getElementById('pix-copia-cola');
         inputCopia.select();
@@ -179,7 +296,6 @@ function mostrarTelaPagamentoPix(payload, valor) {
         alert('Código Pix copiado com sucesso!');
     });
 
-    // Ação de fechar e limpar carrinho do armazenamento local após pagamento
     document.getElementById('btn-fechar-pix').addEventListener('click', () => {
         modalDiv.remove();
         carrinho = [];
