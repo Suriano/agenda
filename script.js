@@ -131,7 +131,7 @@ btnFinalizar.addEventListener('click', () => {
 
     const valorTotalStr = document.getElementById('valor-total').textContent;
     
-    const minhaChavePix = "28127477818"; // Seu CPF
+    const minhaChavePix = "28127477819"; // Seu CPF
     const meuNome = "Anderson Pinheiro Suriano";
     const minhaCidade = "SAO PAULO";
     const idTransacao = "PEDIDO" + Math.floor(Math.random() * 1000);
