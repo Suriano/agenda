@@ -208,10 +208,17 @@ window.removerItem = function(index) {
     salvarESincronizar();
 }
 
-// Finalizar Compra, Exibir o Pix e Salvar no Realtime Database
+// Finalizar Compra (Exige login obrigatório para gerar o Pix e salvar no banco)
 btnFinalizar.addEventListener('click', () => {
     if (carrinho.length === 0) {
         alert('Seu carrinho está vazio!');
+        return;
+    }
+
+    // Validação de login obrigatório
+    if (!usuarioLogado) {
+        alert('Você precisa estar logado para finalizar a compra e gerar o Pix!');
+        modalLogin.style.display = 'flex';
         return;
     }
 
@@ -225,10 +232,10 @@ btnFinalizar.addEventListener('click', () => {
 
     mostrarTelaPagamentoPix(payloadPix, valorTotalStr);
 
-    // Salvando os dados no Realtime Database do Firebase
+    // Salvando os dados no Realtime Database vinculados ao usuário logado
     push(ref(rtdb, 'pedidos'), {
-        userId: usuarioLogado ? usuarioLogado.uid : "Anônimo",
-        userEmail: usuarioLogado ? usuarioLogado.email : "Não logado",
+        userId: usuarioLogado.uid,
+        userEmail: usuarioLogado.email,
         itens: carrinho,
         total: parseFloat(valorTotalStr),
         status: "Aguardando Pagamento",
