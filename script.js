@@ -1,40 +1,37 @@
-// Array para armazenar os produtos do carrinho
 let carrinho = [];
 
-// Seleciona os elementos do DOM
 const botoesComprar = document.querySelectorAll('.btn-comprar');
 const listaCarrinho = document.getElementById('lista-carrinho');
 const valorTotal = document.getElementById('valor-total');
 const contadorCarrinho = document.getElementById('contador-carrinho');
 const btnFinalizar = document.getElementById('btn-finalizar');
 
-// Adiciona evento de clique em cada botão de compra
 botoesComprar.forEach(botao => {
     botao.addEventListener('click', (evento) => {
         const produtoDiv = evento.target.parentElement;
         const id = produtoDiv.getAttribute('data-id');
         const nome = produtoDiv.getAttribute('data-nome');
         const preco = parseFloat(produtoDiv.getAttribute('data-preco'));
+        const imagem = produtoDiv.getAttribute('data-img'); // Pega a imagem
 
-        adicionarAoCarrinho(id, nome, preco);
+        adicionarAoCarrinho(id, nome, preco, imagem);
     });
 });
 
-function adicionarAoCarrinho(id, nome, preco) {
-    // Verifica se o item já está no carrinho
+// Adicionamos o parâmetro 'imagem' na função
+function adicionarAoCarrinho(id, nome, preco, imagem) {
     const itemExistente = carrinho.find(item => item.id === id);
 
     if (itemExistente) {
         itemExistente.quantidade++;
     } else {
-        carrinho.push({ id, nome, preco, quantidade: 1 });
+        carrinho.push({ id, nome, preco, imagem, quantidade: 1 });
     }
 
     atualizarCarrinho();
 }
 
 function atualizarCarrinho() {
-    // Limpa a lista visual
     listaCarrinho.innerHTML = '';
     let total = 0;
     let quantidadeTotal = 0;
@@ -43,16 +40,20 @@ function atualizarCarrinho() {
         total += item.preco * item.quantidade;
         quantidadeTotal += item.quantidade;
 
-        // Cria o elemento HTML para cada item do carrinho
         const li = document.createElement('li');
+        
+        // Incluímos a tag <img> dentro do HTML gerado do carrinho
         li.innerHTML = `
-            ${item.nome} (x${item.quantidade}) - R$ ${(item.preco * item.quantidade).toFixed(2)}
+            <div class="item-info">
+                <img src="${item.imagem}" alt="${item.nome}" class="carrinho-img">
+                <span>${item.nome} (x${item.quantidade}) - R$ ${(item.preco * item.quantidade).toFixed(2)}</span>
+            </div>
             <button onclick="removerItem(${index})">❌</button>
         `;
+        
         listaCarrinho.appendChild(li);
     });
 
-    // Atualiza os totais na tela
     valorTotal.textContent = total.toFixed(2);
     contadorCarrinho.textContent = quantidadeTotal;
 }
