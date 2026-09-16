@@ -4,14 +4,26 @@ import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, si
 import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 // COLE AQUI AS CONFIGURAÇÕES DO SEU PROJETO FIREBASE
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-    apiKey: "SUA_API_KEY",
-    authDomain: "SEU_PROJETO.firebaseapp.com",
-    projectId: "SEU_PROJETO_ID",
-    storageBucket: "SEU_PROJETO.appspot.com",
-    messagingSenderId: "SEU_SENDER_ID",
-    appId: "SEU_APP_ID"
+  apiKey: "AIzaSyDDPLoikLfkFx1C_PZLRyVWXPtP6i9weoU",
+  authDomain: "pizzariasuriano.firebaseapp.com",
+  databaseURL: "https://pizzariasuriano-default-rtdb.firebaseio.com",
+  projectId: "pizzariasuriano",
+  storageBucket: "pizzariasuriano.firebasestorage.app",
+  messagingSenderId: "403698750387",
+  appId: "1:403698750387:web:0a38059c12d7015c7931c6",
+  measurementId: "G-9T7YB5N6VS"
 };
+
+// Initialize Firebase
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
