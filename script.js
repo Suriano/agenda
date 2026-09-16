@@ -1,7 +1,7 @@
-// Importando o Firebase SDK via CDN Modular ESM
+// Importando o Firebase SDK via CDN Modular ESM (Auth, App e Realtime Database)
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { getDatabase, ref, push } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
 // Configurações do seu projeto Firebase
 const firebaseConfig = {
@@ -18,7 +18,7 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-const db = getFirestore(app);
+const rtdb = getDatabase(app); // Usando Realtime Database
 const googleProvider = new GoogleAuthProvider();
 
 let carrinho = JSON.parse(localStorage.getItem('carrinho')) || [];
@@ -208,7 +208,7 @@ window.removerItem = function(index) {
     salvarESincronizar();
 }
 
-// Finalizar Compra e Exibir o Pix imediatamente
+// Finalizar Compra, Exibir o Pix e Salvar no Realtime Database
 btnFinalizar.addEventListener('click', () => {
     if (carrinho.length === 0) {
         alert('Seu carrinho está vazio!');
@@ -225,17 +225,15 @@ btnFinalizar.addEventListener('click', () => {
 
     mostrarTelaPagamentoPix(payloadPix, valorTotalStr);
 
-    // Tenta salvar em segundo plano no Firestore (se falhar, não bloqueia o Pix)
-    if (usuarioLogado) {
-        addDoc(collection(db, "pedidos"), {
-            userId: usuarioLogado.uid,
-            userEmail: usuarioLogado.email,
-            itens: carrinho,
-            total: parseFloat(valorTotalStr),
-            status: "Aguardando Pagamento",
-            criadoEm: serverTimestamp()
-        }).catch(e => console.log("Erro ao salvar no banco:", e.message));
-    }
+    // Salvando os dados no Realtime Database do Firebase
+    push(ref(rtdb, 'pedidos'), {
+        userId: usuarioLogado ? usuarioLogado.uid : "Anônimo",
+        userEmail: usuarioLogado ? usuarioLogado.email : "Não logado",
+        itens: carrinho,
+        total: parseFloat(valorTotalStr),
+        status: "Aguardando Pagamento",
+        criadoEm: new Date().toISOString()
+    }).catch(e => console.log("Erro ao salvar no banco:", e.message));
 });
 
 // Função para gerar o código Pix Copia e Cola
