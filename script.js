@@ -131,8 +131,8 @@ btnFinalizar.addEventListener('click', () => {
     const valorTotalStr = document.getElementById('valor-total').textContent;
     
     // Insira seus dados reais aqui:
-    const minhaChavePix = "12345678900"; // Seu CPF (somente números) ou chave
-    const meuNome = "SEU NOME COMPLETO";  // Nome da sua conta bancária
+    const minhaChavePix = "28127477818"; // Seu CPF (somente números) ou chave
+    const meuNome = "Anderson Pinheiro Suriano";  // Nome da sua conta bancária
     const minhaCidade = "SAO PAULO";     // Sua cidade
     const idTransacao = "PEDIDO" + Math.floor(Math.random() * 1000);
 
