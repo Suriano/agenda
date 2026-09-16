@@ -1,10 +1,14 @@
-let carrinho = [];
+// Carrega o carrinho salvo no navegador (localStorage) ao abrir a página
+let carrinho = JSON.parse(localStorage.getItem('carrinho')) || [];
 
 const botoesComprar = document.querySelectorAll('.btn-comprar');
 const listaCarrinho = document.getElementById('lista-carrinho');
 const valorTotal = document.getElementById('valor-total');
 const contadorCarrinho = document.getElementById('contador-carrinho');
 const btnFinalizar = document.getElementById('btn-finalizar');
+
+// Atualiza a tela imediatamente com os itens carregados do armazenamento
+atualizarCarrinho();
 
 botoesComprar.forEach(botao => {
     botao.addEventListener('click', (evento) => {
@@ -27,7 +31,7 @@ function adicionarAoCarrinho(id, nome, preco, imagem) {
         carrinho.push({ id, nome, preco, imagem, quantidade: 1 });
     }
 
-    atualizarCarrinho();
+    salvarESincronizar();
 }
 
 function atualizarCarrinho() {
@@ -54,9 +58,15 @@ function atualizarCarrinho() {
     contadorCarrinho.textContent = quantidadeTotal;
 }
 
+// Salva as alterações no localStorage do navegador e atualiza a interface
+function salvarESincronizar() {
+    localStorage.setItem('carrinho', JSON.stringify(carrinho));
+    atualizarCarrinho();
+}
+
 function removerItem(index) {
     carrinho.splice(index, 1);
-    atualizarCarrinho();
+    salvarESincronizar();
 }
 
 // Função para gerar o código Copia e Cola do Pix Estático
@@ -112,7 +122,7 @@ function gerarPayloadPix(chavePix, nomeRecebedor, cidadeRecebedor, valor, identi
     return payload + calcularCRC16(payload);
 }
 
-// Finalizar Compra e Exibir o Modal Pix Bonito
+// Finalizar Compra e Exibir o Modal Pix
 btnFinalizar.addEventListener('click', () => {
     if (carrinho.length === 0) {
         alert('Seu carrinho está vazio!');
@@ -169,10 +179,10 @@ function mostrarTelaPagamentoPix(payload, valor) {
         alert('Código Pix copiado com sucesso!');
     });
 
-    // Ação de fechar e limpar carrinho
+    // Ação de fechar e limpar carrinho do armazenamento local após pagamento
     document.getElementById('btn-fechar-pix').addEventListener('click', () => {
         modalDiv.remove();
         carrinho = [];
-        atualizarCarrinho();
+        salvarESincronizar();
     });
 }
