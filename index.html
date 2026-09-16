@@ -1,1 +1,48 @@
 
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carrinho de Compras Simples</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <header>
+        <h1>Minha Loja Virtual</h1>
+        <div id="carrinho-icone">🛒 Carrinho (<span id="contador-carrinho">0</span>)</div>
+    </header>
+
+    <main class="container">
+        <!-- Vitrine de Produtos -->
+        <section class="produtos">
+            <h2>Produtos</h2>
+            <div class="produto" data-id="1" data-nome="Camiseta HTML" data-preco="49.90">
+                <h3>Camiseta HTML</h3>
+                <p>R$ 49,90</p>
+                <button class="btn-comprar">Adicionar ao Carrinho</button>
+            </div>
+            <div class="produto" data-id="2" data-nome="Caneca CSS" data-preco="29.90">
+                <h3>Caneca CSS</h3>
+                <p>R$ 29,90</p>
+                <button class="btn-comprar">Adicionar ao Carrinho</button>
+            </div>
+        </section>
+
+        <!-- Carrinho de Compras -->
+        <section class="carrinho">
+            <h2>Seu Carrinho</h2>
+            <ul id="lista-carrinho">
+                <!-- Os itens adicionados aparecerão aqui via JavaScript -->
+            </ul>
+            <div class="total">
+                <p>Total: R$ <span id="valor-total">0.00</span></p>
+            </div>
+            <button id="btn-finalizar">Finalizar Compra</button>
+        </section>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>
