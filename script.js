@@ -63,6 +63,64 @@ function removerItem(index) {
     atualizarCarrinho();
 }
 
+
+// Função para gerar o código Copia e Cola do Pix Estático
+function gerarPayloadPix(chavePix, nomeRecebedor, cidadeRecebedor, valor, identificador) {
+    // Função auxiliar para formatar os campos do padrão Pix (EMV)
+    const formatField = (id, value) => {
+        const len = String(value.length).padStart(2, '0');
+        return `${id}${len}${value}`;
+    };
+
+    const gui = formatField('00', 'br.gov.bcb.pix');
+    const key = formatField('01', chavePix);
+    const desc = identificador ? formatField('02', identificador) : '';
+    const merchantAccount = formatField('26', gui + key + desc);
+    
+    const merchantCategoryCode = formatField('52', '0000');
+    const currency = formatField('53', '986'); // Real brasileiro
+    const amount = formatField('54', Number(valor).toFixed(2));
+    const country = formatField('58', 'BR');
+    const merchantName = formatField('59', nomeRecebedor);
+    const merchantCity = formatField('60', cidadeRecebedor);
+    
+    const additionalDataField = formatField('05', identificador || '***');
+    const additionalData = formatField('62', additionalDataField);
+
+    let payload = 
+        formatField('00', '01') + 
+        merchantAccount + 
+        merchantCategoryCode + 
+        currency + 
+        amount + 
+        country + 
+        merchantName + 
+        merchantCity + 
+        additionalData + 
+        '6304'; // CRC16 (checksum simplificado)
+
+    // Cálculo do CRC16 do Pix (padrão BCC)
+    function calcularCRC16(str) {
+        let crc = 0xFFFF;
+        for (let c = 0; c < str.length; c++) {
+            crc ^= str.charCodeAt(c) << 8;
+            for (let i = 0; i < 8; i++) {
+                if (crc & 0x8000) {
+                    crc = (crc << 1) ^ 0x1021;
+                } else {
+                    crc = crc << 1;
+                }
+            }
+        }
+        let hex = (crc & 0xFFFF).toString(16).toUpperCase();
+        return hex.padStart(4, '0');
+    }
+
+    return payload + calcularCRC16(payload);
+}
+
+
+
 btnFinalizar.addEventListener('click', async () => {
     if (carrinho.length === 0) {
         alert('Seu carrinho está vazio!');
