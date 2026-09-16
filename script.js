@@ -208,42 +208,33 @@ window.removerItem = function(index) {
     salvarESincronizar();
 }
 
-// Finalizar Compra e Salvar no Firestore
-btnFinalizar.addEventListener('click', async () => {
+// Finalizar Compra e Exibir o Pix imediatamente
+btnFinalizar.addEventListener('click', () => {
     if (carrinho.length === 0) {
         alert('Seu carrinho está vazio!');
-        return;
-    }
-
-    if (!usuarioLogado) {
-        alert('Você precisa estar logado para finalizar a compra!');
-        modalLogin.style.display = 'flex';
         return;
     }
 
     const valorTotalStr = document.getElementById('valor-total').textContent;
     const idTransacao = "PEDIDO" + Math.floor(Math.random() * 10000);
 
-    try {
-        // Salvando o pedido vinculado ao UID do usuário logado no Firestore
-        await addDoc(collection(db, "pedidos"), {
+    const minhaChavePix = "28127477818";
+    const meuNome = "Anderson Pinheiro Suriano";
+    const minhaCidade = "SAO PAULO";
+    const payloadPix = gerarPayloadPix(minhaChavePix, meuNome, minhaCidade, valorTotalStr, idTransacao);
+
+    mostrarTelaPagamentoPix(payloadPix, valorTotalStr);
+
+    // Tenta salvar em segundo plano no Firestore (se falhar, não bloqueia o Pix)
+    if (usuarioLogado) {
+        addDoc(collection(db, "pedidos"), {
             userId: usuarioLogado.uid,
             userEmail: usuarioLogado.email,
             itens: carrinho,
             total: parseFloat(valorTotalStr),
             status: "Aguardando Pagamento",
             criadoEm: serverTimestamp()
-        });
-
-        const minhaChavePix = "28127477819";
-        const meuNome = "Anderson Pinheiro Suriano";
-        const minhaCidade = "SAO PAULO";
-        const payloadPix = gerarPayloadPix(minhaChavePix, meuNome, minhaCidade, valorTotalStr, idTransacao);
-
-        mostrarTelaPagamentoPix(payloadPix, valorTotalStr);
-
-    } catch (e) {
-        alert('Erro ao registrar o pedido no banco de dados: ' + e.message);
+        }).catch(e => console.log("Erro ao salvar no banco:", e.message));
     }
 });
 
