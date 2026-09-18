@@ -44,7 +44,7 @@ const inputSenha = document.getElementById('auth-senha');
 const spanUserInfo = document.getElementById('user-info');
 const spanUserEmail = document.getElementById('user-email');
 
-// Elementos do Modal de Zoom e Transição de Imagens
+// Elementos do Modal de Zoom e Transição de Imagens Isoladas por Produto
 const imagensProdutos = document.querySelectorAll('.produto-img');
 const modalZoom = document.getElementById('modal-zoom');
 const imagemZoomConteudo = document.getElementById('imagem-zoom-conteudo');
@@ -54,12 +54,11 @@ const btnZoomProx = document.getElementById('btn-zoom-prox');
 
 let galeriaAtual = [];
 let indiceImagemAtual = 0;
-
 let modoCadastro = false;
 
 atualizarCarrinho();
 
-// Funcionalidade de Zoom e Transição de Imagens
+// Trata o clique na imagem para ler apenas o data-galeria do produto específico
 imagensProdutos.forEach(img => {
     img.addEventListener('click', () => {
         const galeriaAttr = img.getAttribute('data-galeria');
@@ -82,7 +81,7 @@ function atualizarImagemZoom() {
         imagemZoomConteudo.style.opacity = 1;
     }, 150);
 
-    // Ocultar setas se houver apenas 1 imagem
+    // Ocultar setas se houver apenas 1 imagem neste produto
     if (galeriaAtual.length <= 1) {
         btnZoomAnt.style.display = 'none';
         btnZoomProx.style.display = 'none';
@@ -254,7 +253,7 @@ window.removerItem = function(index) {
     salvarESincronizar();
 }
 
-// Botão Finalizar Compra integrado com o Mercado Pago e o Render com efeito de loading
+// Botão Finalizar Compra integrado com o servidor no Render (Pix/Cartão)
 btnFinalizar.addEventListener('click', async () => {
     if (carrinho.length === 0) {
         alert('O seu carrinho está vazio!');
