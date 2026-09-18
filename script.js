@@ -18,7 +18,7 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-const rtdb = getDatabase(app); // Usando Realtime Database
+const rtdb = getDatabase(app);
 const googleProvider = new GoogleAuthProvider();
 
 let carrinho = JSON.parse(localStorage.getItem('carrinho')) || [];
@@ -81,41 +81,29 @@ toggleAuthMode.addEventListener('click', () => {
     }
 });
 
-// Função para traduzir os códigos de erro do Firebase Auth
 function traduzirErroFirebase(errorCode) {
     switch (errorCode) {
-        case 'auth/email-already-in-use':
-            return 'Este e-mail já está cadastrado em outra conta.';
-        case 'auth/invalid-email':
-            return 'O formato do e-mail digitado é inválido.';
-        case 'auth/weak-password':
-            return 'A senha é muito fraca. Escolha uma senha com pelo menos 6 caracteres.';
+        case 'auth/email-already-in-use': return 'Este e-mail já está cadastrado em outra conta.';
+        case 'auth/invalid-email': return 'O formato do e-mail digitado é inválido.';
+        case 'auth/weak-password': return 'A senha é muito fraca (mínimo de 6 caracteres).';
         case 'auth/user-not-found':
         case 'auth/wrong-password':
-        case 'auth/invalid-credential':
-            return 'E-mail ou senha incorretos. Verifique seus dados.';
-        case 'auth/too-many-requests':
-            return 'Muitas tentativas malsucedidas. Tente novamente mais tarde.';
-        case 'auth/popup-closed-by-user':
-            return 'A janela de login do Google foi fechada antes de concluir.';
-        default:
-            return 'Ocorreu um erro na autenticação: ' + errorCode;
+        case 'auth/invalid-credential': return 'E-mail ou senha incorretos.';
+        case 'auth/too-many-requests': return 'Muitas tentativas. Tente mais tarde.';
+        default: return 'Ocorreu um erro na autenticação: ' + errorCode;
     }
 }
 
-// Ação de Login com Google (Gmail)
 btnGoogle.addEventListener('click', async () => {
     try {
         await signInWithPopup(auth, googleProvider);
         alert('Login com Google realizado com sucesso!');
         modalLogin.style.display = 'none';
     } catch (error) {
-        const mensagemAmigavel = traduzirErroFirebase(error.code);
-        alert(mensagemAmigavel);
+        alert(traduzirErroFirebase(error.code));
     }
 });
 
-// Ação de Login / Cadastro por E-mail e Senha
 btnAcaoAuth.addEventListener('click', async () => {
     const email = inputEmail.value.trim();
     const senha = inputSenha.value.trim();
@@ -137,18 +125,15 @@ btnAcaoAuth.addEventListener('click', async () => {
         inputEmail.value = '';
         inputSenha.value = '';
     } catch (error) {
-        const mensagemAmigavel = traduzirErroFirebase(error.code);
-        alert(mensagemAmigavel);
+        alert(traduzirErroFirebase(error.code));
     }
 });
 
-// Ação de Logout
 btnLogout.addEventListener('click', async () => {
     await signOut(auth);
     alert('Você saiu da sua conta.');
 });
 
-// Adicionar Produtos
 botoesComprar.forEach(botao => {
     botao.addEventListener('click', (evento) => {
         const produtoDiv = evento.target.parentElement;
@@ -163,13 +148,11 @@ botoesComprar.forEach(botao => {
 
 function adicionarAoCarrinho(id, nome, preco, imagem) {
     const itemExistente = carrinho.find(item => item.id === id);
-
     if (itemExistente) {
         itemExistente.quantidade++;
     } else {
         carrinho.push({ id, nome, preco, imagem, quantidade: 1 });
     }
-
     salvarESincronizar();
 }
 
@@ -202,168 +185,57 @@ function salvarESincronizar() {
     atualizarCarrinho();
 }
 
-// Torna a função global para o botão ❌ funcionar no HTML gerado
 window.removerItem = function(index) {
     carrinho.splice(index, 1);
     salvarESincronizar();
 }
 
-// Finalizar Compra (Exige login obrigatório para gerar o Pix e salvar no banco)
-//btnFinalizar.addEventListener('click', () => {
-//    if (carrinho.length === 0) {
-//        alert('Seu carrinho está vazio!');
-//        return;
-//    }
-
-document.getElementById('btn-finalizar').addEventListener('click', async () => {
-    const itensCarrinho = [
-        { nome: 'Camiseta HTML', quantidade: 1, preco: 49.90 }
-    ];
-
-    try {
-        // Substitua pela URL real fornecida pelo Render
-        const resposta = await fetch('https://agenda-i8bg.onrender.com', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ itens: itensCarrinho })
-        });
-
-        const dados = await resposta.json();
-
-        if (dados.init_point) {
-            window.location.href = dados.init_point; // Redireciona para o checkout do Mercado Pago
-        } else {
-            alert('Não foi possível iniciar o pagamento.');
-        }
-    } catch (error) {
-        console.error('Erro:', error);
-        alert('Erro de conexão com o servidor.');
+// Botão Finalizar Compra integrado com o Mercado Pago e o Render
+btnFinalizar.addEventListener('click', async () => {
+    if (carrinho.length === 0) {
+        alert('Seu carrinho está vazio!');
+        return;
     }
-});
 
-
-
-
-    // Validação de login obrigatório
     if (!usuarioLogado) {
-        alert('Você precisa estar logado para finalizar a compra e gerar o Pix!');
+        alert('Você precisa estar logado para finalizar a compra!');
         modalLogin.style.display = 'flex';
         return;
     }
 
     const valorTotalStr = document.getElementById('valor-total').textContent;
-    const idTransacao = "PEDIDO" + Math.floor(Math.random() * 10000);
 
-    const minhaChavePix = "28127477818";
-    const meuNome = "Anderson Pinheiro Suriano";
-    const minhaCidade = "SAO PAULO";
-    const payloadPix = gerarPayloadPix(minhaChavePix, meuNome, minhaCidade, valorTotalStr, idTransacao);
+    try {
+        // Envia os itens reais do carrinho atual para o servidor no Render
+        const resposta = await fetch('https://agenda-i8bg.onrender.com/criar-preferencia', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                itens: carrinho,
+                emailComprador: usuarioLogado.email
+            })
+        });
 
-    mostrarTelaPagamentoPix(payloadPix, valorTotalStr);
+        const dados = await resposta.json();
 
-    // Salvando os dados no Realtime Database vinculados ao usuário logado
-    push(ref(rtdb, 'pedidos'), {
-        userId: usuarioLogado.uid,
-        userEmail: usuarioLogado.email,
-        itens: carrinho,
-        total: parseFloat(valorTotalStr),
-        status: "Aguardando Pagamento",
-        criadoEm: new Date().toISOString()
-    }).catch(e => console.log("Erro ao salvar no banco:", e.message));
-});
+        if (dados.init_point) {
+            // Salvando também o pedido no Firebase Database
+            push(ref(rtdb, 'pedidos'), {
+                userId: usuarioLogado.uid,
+                userEmail: usuarioLogado.email,
+                itens: carrinho,
+                total: parseFloat(valorTotalStr),
+                status: "Aguardando Pagamento",
+                criadoEm: new Date().toISOString()
+            }).catch(e => console.log("Erro ao salvar no banco:", e.message));
 
-// Função para gerar o código Pix Copia e Cola
-function gerarPayloadPix(chavePix, nomeRecebedor, cidadeRecebedor, valor, identificador) {
-    const formatField = (id, value) => {
-        const len = String(value.length).padStart(2, '0');
-        return `${id}${len}${value}`;
-    };
-
-    const gui = formatField('00', 'br.gov.bcb.pix');
-    const key = formatField('01', chavePix);
-    const desc = identificador ? formatField('02', identificador) : '';
-    const merchantAccount = formatField('26', gui + key + desc);
-    
-    const merchantCategoryCode = formatField('52', '0000');
-    const currency = formatField('53', '986');
-    const amount = formatField('54', Number(valor).toFixed(2));
-    const country = formatField('58', 'BR');
-    const merchantName = formatField('59', nomeRecebedor);
-    const merchantCity = formatField('60', cidadeRecebedor);
-    
-    const additionalDataField = formatField('05', identificador || '***');
-    const additionalData = formatField('62', additionalDataField);
-
-    let payload = 
-        formatField('00', '01') + 
-        merchantAccount + 
-        merchantCategoryCode + 
-        currency + 
-        amount + 
-        country + 
-        merchantName + 
-        merchantCity + 
-        additionalData + 
-        '6304';
-
-    function calcularCRC16(str) {
-        let crc = 0xFFFF;
-        for (let c = 0; c < str.length; c++) {
-            crc ^= str.charCodeAt(c) << 8;
-            for (let i = 0; i < 8; i++) {
-                if (crc & 0x8000) {
-                    crc = (crc << 1) ^ 0x1021;
-                } else {
-                    crc = crc << 1;
-                }
-            }
+            // Redireciona para o Checkout Pro oficial do Mercado Pago
+            window.location.href = dados.init_point;
+        } else {
+            alert('Não foi possível gerar o link de pagamento.');
         }
-        let hex = (crc & 0xFFFF).toString(16).toUpperCase();
-        return hex.padStart(4, '0');
+    } catch (error) {
+        console.error('Erro:', error);
+        alert('Erro de conexão com o servidor de pagamento.');
     }
-
-    return payload + calcularCRC16(payload);
-}
-
-function mostrarTelaPagamentoPix(payload, valor) {
-    const modalDiv = document.createElement('div');
-    modalDiv.style.cssText = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); display:flex; justify-content:center; align-items:center; z-index:1000; font-family:'Inter', sans-serif;";
-    
-    modalDiv.innerHTML = `
-        <div style="background:white; padding:30px; border-radius:16px; text-align:center; max-width:400px; width:90%; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
-            <h3 style="margin-bottom: 10px; color: #111; font-size: 20px;">Pague com Pix</h3>
-            <p style="color: #666; font-size: 14px; margin-bottom: 15px;">Total a pagar: <strong style="color: #059669; font-size: 18px;">R$ ${valor}</strong></p>
-            
-            <div id="qrcode-container" style="margin: 15px auto; display:flex; justify-content:center; background: #f9fafb; padding: 15px; border-radius: 12px; border: 1px solid #e5e7eb; width: fit-content;"></div>
-            
-            <p style="font-size: 12px; color: #4b5563; margin-bottom: 8px;">Escaneie o QR Code com o app do seu banco ou copie o código:</p>
-            
-            <input type="text" id="pix-copia-cola" value="${payload}" readonly style="width:100%; padding: 10px; font-size: 12px; margin-bottom:10px; border: 1px solid #d1d5db; border-radius: 6px; background: #f3f4f6; text-align: center;" />
-            
-            <button id="btn-copiar" style="background: #2563eb; color: white; border: none; padding: 10px; width: 100%; border-radius: 6px; font-weight: 600; cursor: pointer; margin-bottom: 8px;">📋 Copiar Código Pix</button>
-            
-            <button id="btn-fechar-pix" style="background: #dc2626; color: white; border: none; padding: 10px; width: 100%; border-radius: 6px; font-weight: 600; cursor: pointer;">Fechar / Já Paguei</button>
-        </div>
-    `;
-
-    document.body.appendChild(modalDiv);
-
-    new QRCode(document.getElementById("qrcode-container"), {
-        text: payload,
-        width: 180,
-        height: 180
-    });
-
-    document.getElementById('btn-copiar').addEventListener('click', () => {
-        const inputCopia = document.getElementById('pix-copia-cola');
-        inputCopia.select();
-        navigator.clipboard.writeText(inputCopia.value);
-        alert('Código Pix copiado com sucesso!');
-    });
-
-    document.getElementById('btn-fechar-pix').addEventListener('click', () => {
-        modalDiv.remove();
-        carrinho = [];
-        salvarESincronizar();
-    });
-}
+});
