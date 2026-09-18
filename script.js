@@ -191,6 +191,10 @@ window.removerItem = function(index) {
 }
 
 // Botão Finalizar Compra integrado com o Mercado Pago e o Render
+
+
+
+// Botão Finalizar Compra integrado com o Mercado Pago e o Render
 btnFinalizar.addEventListener('click', async () => {
     if (carrinho.length === 0) {
         alert('O seu carrinho está vazio!');
@@ -204,6 +208,12 @@ btnFinalizar.addEventListener('click', async () => {
     }
 
     const valorTotalStr = document.getElementById('valor-total').textContent;
+
+    // Altera o botão para avisar o utilizador e o desativa
+    const textoOriginal = btnFinalizar.textContent;
+    btnFinalizar.textContent = 'A gerar pagamento, aguarde...';
+    btnFinalizar.disabled = true;
+    btnFinalizar.style.opacity = '0.7';
 
     try {
         const resposta = await fetch('https://agenda-i8bg.onrender.com/criar-preferencia', {
@@ -230,9 +240,36 @@ btnFinalizar.addEventListener('click', async () => {
             window.location.href = dados.init_point;
         } else {
             alert('Não foi possível gerar o link de pagamento.');
+            // Restaura o botão caso dê erro
+            btnFinalizar.textContent = textoOriginal;
+            btnFinalizar.disabled = false;
+            btnFinalizar.style.opacity = '1';
         }
     } catch (error) {
         console.error('Erro:', error);
         alert('Erro de conexão com o servidor de pagamento.');
+        // Restaura o botão caso dê erro
+        btnFinalizar.textContent = textoOriginal;
+        btnFinalizar.disabled = false;
+        btnFinalizar.style.opacity = '1';
     }
+});
+
+
+
+
+
+    const valorTotalStr = document.getElementById('valor-total').textContent;
+
+    try {
+        const resposta = await fetch('https://agenda-i8bg.onrender.com/criar-preferencia', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                itens: carrinho,
+                emailComprador: usuarioLogado.email
+            })
+        });
+
+        
 });
