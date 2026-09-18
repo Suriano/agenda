@@ -44,9 +44,33 @@ const inputSenha = document.getElementById('auth-senha');
 const spanUserInfo = document.getElementById('user-info');
 const spanUserEmail = document.getElementById('user-email');
 
+// Elementos do Modal de Zoom de Imagem
+const imagensProdutos = document.querySelectorAll('.produto-img');
+const modalZoom = document.getElementById('modal-zoom');
+const imagemZoomConteudo = document.getElementById('imagem-zoom-conteudo');
+const btnFecharZoom = document.getElementById('btn-fechar-zoom');
+
 let modoCadastro = false;
 
 atualizarCarrinho();
+
+// Funcionalidade de Zoom na Imagem do Produto
+imagensProdutos.forEach(img => {
+    img.addEventListener('click', () => {
+        modalZoom.style.display = 'flex';
+        imagemZoomConteudo.src = img.src;
+    });
+});
+
+btnFecharZoom.addEventListener('click', () => {
+    modalZoom.style.display = 'none';
+});
+
+modalZoom.addEventListener('click', (e) => {
+    if (e.target === modalZoom) {
+        modalZoom.style.display = 'none';
+    }
+});
 
 // Monitorar estado de autenticação do usuário
 onAuthStateChanged(auth, (user) => {
@@ -206,7 +230,6 @@ btnFinalizar.addEventListener('click', async () => {
     const valorTotalStr = document.getElementById('valor-total').textContent;
     const textoOriginal = btnFinalizar.innerHTML;
 
-    // Adiciona o ícone girando e altera o texto do botão
     btnFinalizar.innerHTML = `<span class="spinner"></span> A gerar pagamento...`;
     btnFinalizar.disabled = true;
     btnFinalizar.style.opacity = '0.8';
