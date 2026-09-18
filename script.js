@@ -44,7 +44,7 @@ const inputSenha = document.getElementById('auth-senha');
 const spanUserInfo = document.getElementById('user-info');
 const spanUserEmail = document.getElementById('user-email');
 
-// Elementos do Modal de Zoom e Transição de Imagens Isoladas por Produto
+// Elementos do Modal de Zoom e Transição de Imagens
 const imagensProdutos = document.querySelectorAll('.produto-img');
 const modalZoom = document.getElementById('modal-zoom');
 const imagemZoomConteudo = document.getElementById('imagem-zoom-conteudo');
@@ -58,7 +58,7 @@ let modoCadastro = false;
 
 atualizarCarrinho();
 
-// Trata o clique na imagem para ler apenas o data-galeria do produto específico
+// Funcionalidade de Zoom e Transição de Imagens
 imagensProdutos.forEach(img => {
     img.addEventListener('click', () => {
         const galeriaAttr = img.getAttribute('data-galeria');
@@ -81,7 +81,6 @@ function atualizarImagemZoom() {
         imagemZoomConteudo.style.opacity = 1;
     }, 150);
 
-    // Ocultar setas se houver apenas 1 imagem neste produto
     if (galeriaAtual.length <= 1) {
         btnZoomAnt.style.display = 'none';
         btnZoomProx.style.display = 'none';
@@ -253,8 +252,8 @@ window.removerItem = function(index) {
     salvarESincronizar();
 }
 
-// Botão Finalizar Compra integrado com o servidor no Render (Pix/Cartão)
-btnFinalizar.addEventListener('click', async () => {
+// Botão Finalizar Compra: Exibe a escolha entre Pix ou Mercado Livre (Mercado Pago)
+btnFinalizar.addEventListener('click', () => {
     if (carrinho.length === 0) {
         alert('O seu carrinho está vazio!');
         return;
@@ -266,13 +265,79 @@ btnFinalizar.addEventListener('click', async () => {
         return;
     }
 
-    const valorTotalStr = document.getElementById('valor-total').textContent;
-    const textoOriginal = btnFinalizar.innerHTML;
+    mostrarModalSelecaoPagamento();
+});
 
-    btnFinalizar.innerHTML = `<span class="spinner"></span> A gerar pagamento...`;
+// Modal para escolher a forma de pagamento
+function mostrarModalSelecaoPagamento() {
+    const modalExistente = document.getElementById('modal-selecao-pagamento');
+    if (modalExistente) modalExistente.remove();
+
+    const valorTotalStr = document.getElementById('valor-total').textContent;
+
+    const modalDiv = document.createElement('div');
+    modalDiv.id = 'modal-selecao-pagamento';
+    modalDiv.style.cssText = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); display:flex; justify-content:center; align-items:center; z-index:2500; font-family:'Inter', sans-serif;";
+    
+    modalDiv.innerHTML = `
+        <div style="background:white; padding:30px; border-radius:16px; text-align:center; max-width:380px; width:90%; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
+            <h3>Escolha a Forma de Pagamento</h3>
+            <p style="color: #666; font-size: 14px; margin-bottom: 20px;">Total: <strong style="color: #059669; font-size: 18px;">R$ ${valorTotalStr}</strong></p>
+            
+            <button id="btn-escolha-pix" style="background: #059669; color: white; border: none; padding: 12px; width: 100%; border-radius: 8px; font-weight: 600; cursor: pointer; margin-bottom: 12px; display:flex; align-items:center; justify-content:center; gap:8px;">🟢 Pagar com Pix</button>
+            
+            <button id="btn-escolha-ml" style="background: #2563eb; color: white; border: none; padding: 12px; width: 100%; border-radius: 8px; font-weight: 600; cursor: pointer; margin-bottom: 12px; display:flex; align-items:center; justify-content:center; gap:8px;">🔵 Pagar com Mercado Livre / Pago</button>
+            
+            <button id="btn-fechar-escolha" style="background: #6b7280; color: white; border: none; padding: 10px; width: 100%; border-radius: 8px; font-weight: 600; cursor: pointer;">Cancelar</button>
+        </div>
+    `;
+
+    document.body.appendChild(modalDiv);
+
+    document.getElementById('btn-escolha-pix').addEventListener('click', () => {
+        modalDiv.remove();
+        processarPagamentoPix(valorTotalStr);
+    });
+
+    document.getElementById('btn-escolha-ml').addEventListener('click', () => {
+        modalDiv.remove();
+        processarPagamentoMercadoLivre();
+    });
+
+    document.getElementById('btn-fechar-escolha').addEventListener('click', () => {
+        modalDiv.remove();
+    });
+}
+
+// Fluxo de Pix
+function processarPagamentoPix(valorTotalStr) {
+    const idTransacao = "PEDIDO" + Math.floor(Math.random() * 10000);
+    const minhaChavePix = "28127477818";
+    const meuNome = "Anderson Pinheiro Suriano";
+    const minhaCidade = "SAO PAULO";
+    const payloadPix = gerarPayloadPix(minhaChavePix, meuNome, minhaCidade, valorTotalStr, idTransacao);
+
+    mostrarTelaPagamentoPix(payloadPix, valorTotalStr);
+
+    push(ref(rtdb, 'pedidos'), {
+        userId: usuarioLogado.uid,
+        userEmail: usuarioLogado.email,
+        itens: carrinho,
+        total: parseFloat(valorTotalStr),
+        metodoPagamento: "Pix",
+        status: "Aguardando Pagamento",
+        criadoEm: new Date().toISOString()
+    }).catch(e => console.log("Erro ao salvar no banco:", e.message));
+}
+
+// Fluxo de Mercado Livre / Mercado Pago via Render
+async function processarPagamentoMercadoLivre() {
+    const valorTotalStr = document.getElementById('valor-total').textContent;
+    
+    // Criando indicador visual de carregamento global temporário ou alertando
+    const originalText = btnFinalizar.innerHTML;
+    btnFinalizar.innerHTML = `<span class="spinner"></span> A gerar Mercado Livre...`;
     btnFinalizar.disabled = true;
-    btnFinalizar.style.opacity = '0.8';
-    btnFinalizar.style.cursor = 'not-allowed';
 
     try {
         const resposta = await fetch('https://agenda-i8bg.onrender.com/criar-preferencia', {
@@ -292,6 +357,7 @@ btnFinalizar.addEventListener('click', async () => {
                 userEmail: usuarioLogado.email,
                 itens: carrinho,
                 total: parseFloat(valorTotalStr),
+                metodoPagamento: "Mercado Pago",
                 status: "Aguardando Pagamento",
                 criadoEm: new Date().toISOString()
             }).catch(e => console.log("Erro ao salvar no banco:", e.message));
@@ -308,9 +374,103 @@ btnFinalizar.addEventListener('click', async () => {
     }
 
     function restaurarBotao() {
-        btnFinalizar.innerHTML = textoOriginal;
+        btnFinalizar.innerHTML = originalText;
         btnFinalizar.disabled = false;
-        btnFinalizar.style.opacity = '1';
-        btnFinalizar.style.cursor = 'pointer';
     }
-});
+}
+
+// Função para gerar o código Pix Copia e Cola
+function gerarPayloadPix(chavePix, nomeRecebedor, cidadeRecebedor, valor, identificador) {
+    const formatField = (id, value) => {
+        const len = String(value.length).padStart(2, '0');
+        return `${id}${len}${value}`;
+    };
+
+    const gui = formatField('00', 'br.gov.bcb.pix');
+    const key = formatField('01', chavePix);
+    const desc = identificador ? formatField('02', identificador) : '';
+    const merchantAccount = formatField('26', gui + key + desc);
+    
+    const merchantCategoryCode = formatField('52', '0000');
+    const currency = formatField('53', '986');
+    const amount = formatField('54', Number(valor).toFixed(2));
+    const country = formatField('58', 'BR');
+    const merchantName = formatField('59', nomeRecebedor);
+    const merchantCity = formatField('60', cidadeRecebedor);
+    
+    const additionalDataField = formatField('05', identificador || '***');
+    const additionalData = formatField('62', additionalDataField);
+
+    let payload = 
+        formatField('00', '01') + 
+        merchantAccount + 
+        merchantCategoryCode + 
+        currency + 
+        amount + 
+        country + 
+        merchantName + 
+        merchantCity + 
+        additionalData + 
+        '6304';
+
+    function calcularCRC16(str) {
+        let crc = 0xFFFF;
+        for (let c = 0; c < str.length; c++) {
+            crc ^= str.charCodeAt(c) << 8;
+            for (let i = 0; i < 8; i++) {
+                if (crc & 0x8000) {
+                    crc = (crc << 1) ^ 0x1021;
+                } else {
+                    crc = crc << 1;
+                }
+            }
+        }
+        let hex = (crc & 0xFFFF).toString(16).toUpperCase();
+        return hex.padStart(4, '0');
+    }
+
+    return payload + calcularCRC16(payload);
+}
+
+function mostrarTelaPagamentoPix(payload, valor) {
+    const modalDiv = document.createElement('div');
+    modalDiv.style.cssText = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); display:flex; justify-content:center; align-items:center; z-index:1000; font-family:'Inter', sans-serif;";
+    
+    modalDiv.innerHTML = `
+        <div style="background:white; padding:30px; border-radius:16px; text-align:center; max-width:400px; width:90%; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
+            <h3 style="margin-bottom: 10px; color: #111; font-size: 20px;">Pague com Pix</h3>
+            <p style="color: #666; font-size: 14px; margin-bottom: 15px;">Total a pagar: <strong style="color: #059669; font-size: 18px;">R$ ${valor}</strong></p>
+            
+            <div id="qrcode-container" style="margin: 15px auto; display:flex; justify-content:center; background: #f9fafb; padding: 15px; border-radius: 12px; border: 1px solid #e5e7eb; width: fit-content;"></div>
+            
+            <p style="font-size: 12px; color: #4b5563; margin-bottom: 8px;">Escaneie o QR Code com o app do seu banco ou copie o código:</p>
+            
+            <input type="text" id="pix-copia-cola" value="${payload}" readonly style="width:100%; padding: 10px; font-size: 12px; margin-bottom:10px; border: 1px solid #d1d5db; border-radius: 6px; background: #f3f4f6; text-align: center;" />
+            
+            <button id="btn-copiar" style="background: #2563eb; color: white; border: none; padding: 10px; width: 100%; border-radius: 6px; font-weight: 600; cursor: pointer; margin-bottom: 8px;">📋 Copiar Código Pix</button>
+            
+            <button id="btn-fechar-pix" style="background: #dc2626; color: white; border: none; padding: 10px; width: 100%; border-radius: 6px; font-weight: 600; cursor: pointer;">Fechar / Já Paguei</button>
+        </div>
+    `;
+
+    document.body.appendChild(modalDiv);
+
+    new QRCode(document.getElementById("qrcode-container"), {
+        text: payload,
+        width: 180,
+        height: 180
+    });
+
+    document.getElementById('btn-copiar').addEventListener('click', () => {
+        const inputCopia = document.getElementById('pix-copia-cola');
+        inputCopia.select();
+        navigator.clipboard.writeText(inputCopia.value);
+        alert('Código Pix copiado com sucesso!');
+    });
+
+    document.getElementById('btn-fechar-pix').addEventListener('click', () => {
+        modalDiv.remove();
+        carrinho = [];
+        salvarESincronizar();
+    });
+}
