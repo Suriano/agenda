@@ -209,11 +209,40 @@ window.removerItem = function(index) {
 }
 
 // Finalizar Compra (Exige login obrigatório para gerar o Pix e salvar no banco)
-btnFinalizar.addEventListener('click', () => {
-    if (carrinho.length === 0) {
-        alert('Seu carrinho está vazio!');
-        return;
+//btnFinalizar.addEventListener('click', () => {
+//    if (carrinho.length === 0) {
+//        alert('Seu carrinho está vazio!');
+//        return;
+//    }
+
+document.getElementById('btn-finalizar').addEventListener('click', async () => {
+    const itensCarrinho = [
+        { nome: 'Camiseta HTML', quantidade: 1, preco: 49.90 }
+    ];
+
+    try {
+        // Substitua pela URL real fornecida pelo Render
+        const resposta = await fetch('https://agenda-i8bg.onrender.com', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ itens: itensCarrinho })
+        });
+
+        const dados = await resposta.json();
+
+        if (dados.init_point) {
+            window.location.href = dados.init_point; // Redireciona para o checkout do Mercado Pago
+        } else {
+            alert('Não foi possível iniciar o pagamento.');
+        }
+    } catch (error) {
+        console.error('Erro:', error);
+        alert('Erro de conexão com o servidor.');
     }
+});
+
+
+
 
     // Validação de login obrigatório
     if (!usuarioLogado) {
