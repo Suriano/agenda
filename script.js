@@ -309,7 +309,7 @@ function mostrarModalSelecaoPagamento() {
     });
 }
 
-// Fluxo de Pix
+// Fluxo de Pix (Corrigido para salvar no nó adequado às regras: /pedidos/UID)
 function processarPagamentoPix(valorTotalStr) {
     const idTransacao = "PEDIDO" + Math.floor(Math.random() * 10000);
     const minhaChavePix = "28127477818";
@@ -319,7 +319,8 @@ function processarPagamentoPix(valorTotalStr) {
 
     mostrarTelaPagamentoPix(payloadPix, valorTotalStr);
 
-    push(ref(rtdb, 'pedidos'), {
+    // Salvando no Firebase respeitando a regra de $uid
+    push(ref(rtdb, `pedidos/${usuarioLogado.uid}`), {
         userId: usuarioLogado.uid,
         userEmail: usuarioLogado.email,
         itens: carrinho,
@@ -327,14 +328,16 @@ function processarPagamentoPix(valorTotalStr) {
         metodoPagamento: "Pix",
         status: "Aguardando Pagamento",
         criadoEm: new Date().toISOString()
-    }).catch(e => console.log("Erro ao salvar no banco:", e.message));
+    }).catch(e => {
+        console.error("Erro ao salvar no banco:", e.message);
+        alert("Erro ao gravar pedido no Firebase: " + e.message);
+    });
 }
 
 // Fluxo de Mercado Livre / Mercado Pago via Render
 async function processarPagamentoMercadoLivre() {
     const valorTotalStr = document.getElementById('valor-total').textContent;
     
-    // Criando indicador visual de carregamento global temporário ou alertando
     const originalText = btnFinalizar.innerHTML;
     btnFinalizar.innerHTML = `<span class="spinner"></span> A gerar Mercado Livre...`;
     btnFinalizar.disabled = true;
@@ -352,7 +355,8 @@ async function processarPagamentoMercadoLivre() {
         const dados = await resposta.json();
 
         if (dados.init_point) {
-            push(ref(rtdb, 'pedidos'), {
+            // Salvando no Firebase respeitando a regra de $uid
+            push(ref(rtdb, `pedidos/${usuarioLogado.uid}`), {
                 userId: usuarioLogado.uid,
                 userEmail: usuarioLogado.email,
                 itens: carrinho,
@@ -360,7 +364,9 @@ async function processarPagamentoMercadoLivre() {
                 metodoPagamento: "Mercado Pago",
                 status: "Aguardando Pagamento",
                 criadoEm: new Date().toISOString()
-            }).catch(e => console.log("Erro ao salvar no banco:", e.message));
+            }).catch(e => {
+                console.error("Erro ao salvar no banco:", e.message);
+            });
 
             window.location.href = dados.init_point;
         } else {
