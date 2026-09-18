@@ -95,6 +95,12 @@ header h1 {
     object-fit: cover;
     border-radius: 6px;
     margin-right: 15px;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.produto-img:hover {
+    transform: scale(1.03);
 }
 
 .produto-info {
@@ -195,7 +201,6 @@ button:hover {
     background: #047857;
 }
 
-
 /* Estilo para o spinner de carregamento */
 .spinner {
     display: inline-block;
@@ -213,23 +218,7 @@ button:hover {
     to { transform: rotate(360deg); }
 }
 
-
-/* Estilo para imagens clicáveis na vitrine */
-.produto-img {
-    cursor: pointer;
-    transition: transform 0.2s;
-}
-
-.produto-img:hover {
-    transform: scale(1.03);
-}
-
-/* Modal de Zoom */
-#modal-zoom {
-    animation: fadeIn 0.3s ease;
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+/* Específicos para os botões de transição do zoom */
+.zoom-nav-btn:hover {
+    background: rgba(255,255,255,0.4) !important;
 }
