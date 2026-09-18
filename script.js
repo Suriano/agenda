@@ -58,6 +58,14 @@ let modoCadastro = false;
 
 atualizarCarrinho();
 
+// Função auxiliar para obter a data e hora atual do Brasil (Brasília)
+function obterDataHoraBrasil() {
+    return new Date().toLocaleString('pt-BR', { 
+        timeZone: 'America/Sao_Paulo',
+        hour12: false 
+    });
+}
+
 // Funcionalidade de Zoom e Transição de Imagens
 imagensProdutos.forEach(img => {
     img.addEventListener('click', () => {
@@ -309,7 +317,7 @@ function mostrarModalSelecaoPagamento() {
     });
 }
 
-// Fluxo de Pix (Corrigido para salvar no nó adequado às regras: /pedidos/UID)
+// Fluxo de Pix
 function processarPagamentoPix(valorTotalStr) {
     const idTransacao = "PEDIDO" + Math.floor(Math.random() * 10000);
     const minhaChavePix = "28127477818";
@@ -319,7 +327,7 @@ function processarPagamentoPix(valorTotalStr) {
 
     mostrarTelaPagamentoPix(payloadPix, valorTotalStr);
 
-    // Salvando no Firebase respeitando a regra de $uid
+    // Salvando no Firebase com data/hora ajustada para o Brasil
     push(ref(rtdb, `pedidos/${usuarioLogado.uid}`), {
         userId: usuarioLogado.uid,
         userEmail: usuarioLogado.email,
@@ -327,7 +335,7 @@ function processarPagamentoPix(valorTotalStr) {
         total: parseFloat(valorTotalStr),
         metodoPagamento: "Pix",
         status: "Aguardando Pagamento",
-        criadoEm: new Date().toISOString()
+        criadoEm: obterDataHoraBrasil()
     }).catch(e => {
         console.error("Erro ao salvar no banco:", e.message);
         alert("Erro ao gravar pedido no Firebase: " + e.message);
@@ -355,7 +363,7 @@ async function processarPagamentoMercadoLivre() {
         const dados = await resposta.json();
 
         if (dados.init_point) {
-            // Salvando no Firebase respeitando a regra de $uid
+            // Salvando no Firebase com data/hora ajustada para o Brasil
             push(ref(rtdb, `pedidos/${usuarioLogado.uid}`), {
                 userId: usuarioLogado.uid,
                 userEmail: usuarioLogado.email,
@@ -363,7 +371,7 @@ async function processarPagamentoMercadoLivre() {
                 total: parseFloat(valorTotalStr),
                 metodoPagamento: "Mercado Pago",
                 status: "Aguardando Pagamento",
-                criadoEm: new Date().toISOString()
+                criadoEm: obterDataHoraBrasil()
             }).catch(e => {
                 console.error("Erro ao salvar no banco:", e.message);
             });
