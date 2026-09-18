@@ -193,12 +193,12 @@ window.removerItem = function(index) {
 // Botão Finalizar Compra integrado com o Mercado Pago e o Render
 btnFinalizar.addEventListener('click', async () => {
     if (carrinho.length === 0) {
-        alert('Seu carrinho está vazio!');
+        alert('O seu carrinho está vazio!');
         return;
     }
 
     if (!usuarioLogado) {
-        alert('Você precisa estar logado para finalizar a compra!');
+        alert('Precisa de estar autenticado para finalizar a compra!');
         modalLogin.style.display = 'flex';
         return;
     }
@@ -206,7 +206,6 @@ btnFinalizar.addEventListener('click', async () => {
     const valorTotalStr = document.getElementById('valor-total').textContent;
 
     try {
-        // Envia os itens reais do carrinho atual para o servidor no Render
         const resposta = await fetch('https://agenda-i8bg.onrender.com/criar-preferencia', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -219,7 +218,6 @@ btnFinalizar.addEventListener('click', async () => {
         const dados = await resposta.json();
 
         if (dados.init_point) {
-            // Salvando também o pedido no Firebase Database
             push(ref(rtdb, 'pedidos'), {
                 userId: usuarioLogado.uid,
                 userEmail: usuarioLogado.email,
@@ -229,7 +227,6 @@ btnFinalizar.addEventListener('click', async () => {
                 criadoEm: new Date().toISOString()
             }).catch(e => console.log("Erro ao salvar no banco:", e.message));
 
-            // Redireciona para o Checkout Pro oficial do Mercado Pago
             window.location.href = dados.init_point;
         } else {
             alert('Não foi possível gerar o link de pagamento.');
