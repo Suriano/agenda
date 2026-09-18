@@ -86,5 +86,15 @@
 
     <!-- Vinculando o JavaScript no final da página -->
     <script type="module" src="script.js"></script>
+
+
+<!-- Modal de Zoom da Imagem do Produto -->
+    <div id="modal-zoom" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); justify-content:center; align-items:center; z-index:3000; flex-direction:column;">
+        <span id="btn-fechar-zoom" style="position:absolute; top:20px; right:30px; color:white; font-size:36px; font-weight:bold; cursor:pointer;">&times;</span>
+        <img id="imagem-zoom-conteudo" src="" alt="Zoom do Produto" style="max-width:90%; max-height:80vh; object-fit:contain; border-radius:8px; box-shadow:0 5px 25px rgba(0,0,0,0.5);">
+    </div>
+
+
+    
 </body>
 </html>
