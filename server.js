@@ -44,8 +44,8 @@ app.post('/criar-preferencia', async (req, res) => {
                 },
                 back_urls: {
                     success: 'https://seuusuario.github.io/seu-repositorio/sucesso.html', // Ajuste para sua página de sucesso
-                    failure: 'https://seuusuario.github.io/seu-repositorio/falha.html',
-                    pending: 'https://seuusuario.github.io/seu-repositorio/pendente.html'
+                    failure: 'https://suriano.github.io/agenda/',
+                    pending: 'https://suriano.github.io/agenda/'
                 },
                 auto_return: 'approved',
             }
