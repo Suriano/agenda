@@ -212,3 +212,24 @@ button:hover {
 @keyframes spin {
     to { transform: rotate(360deg); }
 }
+
+
+/* Estilo para imagens clicáveis na vitrine */
+.produto-img {
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.produto-img:hover {
+    transform: scale(1.03);
+}
+
+/* Modal de Zoom */
+#modal-zoom {
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
