@@ -190,7 +190,6 @@ window.removerItem = function(index) {
     salvarESincronizar();
 }
 
-
 // Botão Finalizar Compra integrado com o Mercado Pago e o Render com efeito de loading
 btnFinalizar.addEventListener('click', async () => {
     if (carrinho.length === 0) {
@@ -205,9 +204,9 @@ btnFinalizar.addEventListener('click', async () => {
     }
 
     const valorTotalStr = document.getElementById('valor-total').textContent;
+    const textoOriginal = btnFinalizar.innerHTML;
 
     // Adiciona o ícone girando e altera o texto do botão
-    const textoOriginal = btnFinalizar.innerHTML;
     btnFinalizar.innerHTML = `<span class="spinner"></span> A gerar pagamento...`;
     btnFinalizar.disabled = true;
     btnFinalizar.style.opacity = '0.8';
