@@ -44,22 +44,62 @@ const inputSenha = document.getElementById('auth-senha');
 const spanUserInfo = document.getElementById('user-info');
 const spanUserEmail = document.getElementById('user-email');
 
-// Elementos do Modal de Zoom de Imagem
+// Elementos do Modal de Zoom e Transição de Imagens
 const imagensProdutos = document.querySelectorAll('.produto-img');
 const modalZoom = document.getElementById('modal-zoom');
 const imagemZoomConteudo = document.getElementById('imagem-zoom-conteudo');
 const btnFecharZoom = document.getElementById('btn-fechar-zoom');
+const btnZoomAnt = document.getElementById('btn-zoom-ant');
+const btnZoomProx = document.getElementById('btn-zoom-prox');
+
+let galeriaAtual = [];
+let indiceImagemAtual = 0;
 
 let modoCadastro = false;
 
 atualizarCarrinho();
 
-// Funcionalidade de Zoom na Imagem do Produto
+// Funcionalidade de Zoom e Transição de Imagens
 imagensProdutos.forEach(img => {
     img.addEventListener('click', () => {
+        const galeriaAttr = img.getAttribute('data-galeria');
+        if (galeriaAttr) {
+            galeriaAtual = galeriaAttr.split(',').map(item => item.trim());
+        } else {
+            galeriaAtual = [img.src];
+        }
+        
+        indiceImagemAtual = 0;
+        atualizarImagemZoom();
         modalZoom.style.display = 'flex';
-        imagemZoomConteudo.src = img.src;
     });
+});
+
+function atualizarImagemZoom() {
+    imagemZoomConteudo.style.opacity = 0;
+    setTimeout(() => {
+        imagemZoomConteudo.src = galeriaAtual[indiceImagemAtual];
+        imagemZoomConteudo.style.opacity = 1;
+    }, 150);
+
+    // Ocultar setas se houver apenas 1 imagem
+    if (galeriaAtual.length <= 1) {
+        btnZoomAnt.style.display = 'none';
+        btnZoomProx.style.display = 'none';
+    } else {
+        btnZoomAnt.style.display = 'block';
+        btnZoomProx.style.display = 'block';
+    }
+}
+
+btnZoomProx.addEventListener('click', () => {
+    indiceImagemAtual = (indiceImagemAtual + 1) % galeriaAtual.length;
+    atualizarImagemZoom();
+});
+
+btnZoomAnt.addEventListener('click', () => {
+    indiceImagemAtual = (indiceImagemAtual - 1 + galeriaAtual.length) % galeriaAtual.length;
+    atualizarImagemZoom();
 });
 
 btnFecharZoom.addEventListener('click', () => {
