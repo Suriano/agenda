@@ -190,11 +190,8 @@ window.removerItem = function(index) {
     salvarESincronizar();
 }
 
-// Botão Finalizar Compra integrado com o Mercado Pago e o Render
 
-
-
-// Botão Finalizar Compra integrado com o Mercado Pago e o Render
+// Botão Finalizar Compra integrado com o Mercado Pago e o Render com efeito de loading
 btnFinalizar.addEventListener('click', async () => {
     if (carrinho.length === 0) {
         alert('O seu carrinho está vazio!');
@@ -209,11 +206,12 @@ btnFinalizar.addEventListener('click', async () => {
 
     const valorTotalStr = document.getElementById('valor-total').textContent;
 
-    // Altera o botão para avisar o utilizador e o desativa
-    const textoOriginal = btnFinalizar.textContent;
-    btnFinalizar.textContent = 'A gerar pagamento, aguarde...';
+    // Adiciona o ícone girando e altera o texto do botão
+    const textoOriginal = btnFinalizar.innerHTML;
+    btnFinalizar.innerHTML = `<span class="spinner"></span> A gerar pagamento...`;
     btnFinalizar.disabled = true;
-    btnFinalizar.style.opacity = '0.7';
+    btnFinalizar.style.opacity = '0.8';
+    btnFinalizar.style.cursor = 'not-allowed';
 
     try {
         const resposta = await fetch('https://agenda-i8bg.onrender.com/criar-preferencia', {
@@ -240,36 +238,18 @@ btnFinalizar.addEventListener('click', async () => {
             window.location.href = dados.init_point;
         } else {
             alert('Não foi possível gerar o link de pagamento.');
-            // Restaura o botão caso dê erro
-            btnFinalizar.textContent = textoOriginal;
-            btnFinalizar.disabled = false;
-            btnFinalizar.style.opacity = '1';
+            restaurarBotao();
         }
     } catch (error) {
         console.error('Erro:', error);
         alert('Erro de conexão com o servidor de pagamento.');
-        // Restaura o botão caso dê erro
-        btnFinalizar.textContent = textoOriginal;
+        restaurarBotao();
+    }
+
+    function restaurarBotao() {
+        btnFinalizar.innerHTML = textoOriginal;
         btnFinalizar.disabled = false;
         btnFinalizar.style.opacity = '1';
+        btnFinalizar.style.cursor = 'pointer';
     }
-});
-
-
-
-
-
-    const valorTotalStr = document.getElementById('valor-total').textContent;
-
-    try {
-        const resposta = await fetch('https://agenda-i8bg.onrender.com/criar-preferencia', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                itens: carrinho,
-                emailComprador: usuarioLogado.email
-            })
-        });
-
-        
 });
