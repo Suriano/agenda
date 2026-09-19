@@ -8,43 +8,96 @@
     <link rel="stylesheet" href="style.css">
     <!-- Biblioteca de QR Code -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        /* Estilos adicionais recomendados para o novo cabeçalho mobile */
+        header {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 15px;
+            background-color: #fff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            text-align: center;
+        }
+        .logo-container {
+            margin-bottom: 12px;
+        }
+        .logo-container img {
+            max-height: 50px;
+            width: auto;
+            object-fit: contain;
+        }
+        header h1 {
+            font-size: 1.5rem;
+            margin: 0 0 10px 0;
+        }
+        .user-area {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+        }
+        @media (min-width: 768px) {
+            header {
+                flex-direction: row;
+                justify-content: space-between;
+                padding: 15px 30px;
+            }
+            .logo-container {
+                margin-bottom: 0;
+            }
+            header h1 {
+                margin: 0;
+            }
+            .user-area {
+                width: auto;
+                justify-content: flex-end;
+            }
+        }
+    </style>
 </head>
 <body>
 
     <header>
+        <div class="logo-container">
+            <!-- Substitua 'img/logo.png' pelo caminho correto da sua imagem de logo -->
+            <img src="1f146417-51d9-4c71-80bf-27e1004d0897.png" alt="Logo SURIANO">
+        </div>
         <h1>Minha Loja Virtual</h1>
         <div class="user-area">
-            <span id="user-info" style="display:none; font-size: 14px; margin-right: 10px;">Olá, <strong id="user-email"></strong></span>
+            <span id="user-info" style="display:none; font-size: 14px; margin-right: 5px;">Olá, <strong id="user-email"></strong></span>
             <button id="btn-login-modal" style="padding: 6px 12px; font-size: 13px;">Entrar / Cadastrar</button>
-            <button id="btn-logout" style="display:none; background: #dc2626; padding: 6px 12px; font-size: 13px;">Sair</button>
-            <div id="carrinho-icone" style="display:inline-block; margin-left: 15px;">🛒 Carrinho (<span id="contador-carrinho">0</span>)</div>
+            <button id="btn-logout" style="display:none; background: #dc2626; padding: 6px 12px; font-size: 13px; color: white; border: none; border-radius: 4px;">Sair</button>
+            <div id="carrinho-icone" style="display:inline-block; margin-left: 10px; cursor: pointer; font-weight: 500;">🛒 Carrinho (<span id="contador-carrinho">0</span>)</div>
         </div>
     </header>
 
     <main class="container">
-        <!-- Vitrine de Produtos (Adicionado atributo data-imagens com lista separada por vírgulas) -->
+        <!-- Vitrine de Produtos -->
         <section class="produtos">
             <h2>Produtos</h2>
             
             <div class="produto" data-id="1" data-nome="Camiseta HTML" data-preco="499.90" data-img="img/3.jpg">
-    <img src="img/3.jpg" alt="Camiseta HTML" class="produto-img" data-galeria="img/1.jpg,img/2.jpg">
-    <div class="produto-info">
-        <h3>Camiseta Itália</h3>
-        <p>R$ 499,90</p>
-        <p style="font-size: 13px; color: #666;">Estoque: <span id="estoque-1">Carregando...</span></p>
-    </div>
-    <button class="btn-comprar" id="btn-comprar-1">Comprar</button>
-</div>
+                <img src="img/3.jpg" alt="Camiseta HTML" class="produto-img" data-galeria="img/1.jpg,img/2.jpg">
+                <div class="produto-info">
+                    <h3>Camiseta Itália</h3>
+                    <p>R$ 499,90</p>
+                    <p style="font-size: 13px; color: #666;">Estoque: <span id="estoque-1">Carregando...</span></p>
+                </div>
+                <button class="btn-comprar" id="btn-comprar-1">Comprar</button>
+            </div>
 
-<div class="produto" data-id="2" data-nome="Camiseta CSS" data-preco="499.90" data-img="img/2.jpg">
-    <img src="img/2.jpg" alt="Camiseta CSS" class="produto-img" data-galeria="img/3.jpg,img/2.jpg">
-    <div class="produto-info">
-        <h3>Camiseta Alemanha</h3>
-        <p>R$ 499,90</p>
-        <p style="font-size: 13px; color: #666;">Estoque: <span id="estoque-2">Carregando...</span></p>
-    </div>
-    <button class="btn-comprar" id="btn-comprar-2">Comprar</button>
-</div>
+            <div class="produto" data-id="2" data-nome="Camiseta CSS" data-preco="499.90" data-img="img/2.jpg">
+                <img src="img/2.jpg" alt="Camiseta CSS" class="produto-img" data-galeria="img/3.jpg,img/2.jpg">
+                <div class="produto-info">
+                    <h3>Camiseta Alemanha</h3>
+                    <p>R$ 499,90</p>
+                    <p style="font-size: 13px; color: #666;">Estoque: <span id="estoque-2">Carregando...</span></p>
+                </div>
+                <button class="btn-comprar" id="btn-comprar-2">Comprar</button>
+            </div>
         </section>
 
         <!-- Carrinho de Compras -->
@@ -91,7 +144,7 @@
             <input type="password" id="auth-senha" placeholder="Senha" style="width:100%; padding:10px; margin-bottom:15px; border:1px solid #d1d5db; border-radius:6px;" />
             
             <button id="btn-acao-auth" style="width:100%; margin-bottom:10px;">Entrar</button>
-            <p id="toggle-auth-mode" style="text-align:center; font-size:13px; color:#2563eb; cursor:pointer; margin-bottom:10px;">Não tem uma conta? Cadastre-se</p>
+            <p id="toggle-auth-mode" style="text-align:center; font-size:13px; color:#2563eb; cursor:pointer; margin-bottom:10px;">Não tiene uma conta? Cadastre-se</p>
             <button id="btn-fechar-modal" style="width:100%; background:#6b7280;">Cancelar</button>
         </div>
     </div>
