@@ -354,7 +354,6 @@ async function registrarPedidoAguardandoPagamento(metodoPagamento) {
     const valorTotalStr = document.getElementById('valor-total').textContent;
 
     try {
-        // Salva o pedido no banco de dados com status de aguardando
         await push(ref(rtdb, `pedidos/${usuarioLogado.uid}`), {
             userId: usuarioLogado.uid,
             userEmail: usuarioLogado.email,
@@ -374,7 +373,6 @@ async function registrarPedidoAguardandoPagamento(metodoPagamento) {
 
             mostrarTelaPagamentoPix(payloadPix, valorTotalStr);
         } else {
-            // Para o Mercado Pago, baixa o estoque imediatamente ao redirecionar para o gateway de pagamento pago
             await baixarEstoqueNoFirebase();
             await processarPagamentoMercadoLivre(valorTotalStr);
         }
@@ -494,6 +492,7 @@ function gerarPayloadPix(chavePix, nomeRecebedor, cidadeRecebedor, valor, identi
 
 function mostrarTelaPagamentoPix(payload, valor) {
     const modalDiv = document.createElement('div');
+    modalDiv.id = 'modal-pix-container';
     modalDiv.style.cssText = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); display:flex; justify-content:center; align-items:center; z-index:1000; font-family:'Inter', sans-serif;";
     
     modalDiv.innerHTML = `
@@ -509,7 +508,9 @@ function mostrarTelaPagamentoPix(payload, valor) {
             
             <button id="btn-copiar" style="background: #2563eb; color: white; border: none; padding: 10px; width: 100%; border-radius: 6px; font-weight: 600; cursor: pointer; margin-bottom: 8px;">📋 Copiar Código Pix</button>
             
-            <button id="btn-fechar-pix" style="background: #059669; color: white; border: none; padding: 10px; width: 100%; border-radius: 6px; font-weight: 600; cursor: pointer;">✅ Já Paguei / Confirmar</button>
+            <button id="btn-confirmar-pix" style="background: #059669; color: white; border: none; padding: 10px; width: 100%; border-radius: 6px; font-weight: 600; cursor: pointer; margin-bottom: 8px;">✅ Já Paguei / Confirmar</button>
+            
+            <button id="btn-cancelar-pix" style="background: #dc2626; color: white; border: none; padding: 10px; width: 100%; border-radius: 6px; font-weight: 600; cursor: pointer;">❌ Cancelar</button>
         </div>
     `;
 
@@ -529,11 +530,16 @@ function mostrarTelaPagamentoPix(payload, valor) {
     });
 
     // Ao confirmar o pagamento do Pix, desconta o estoque e limpa o carrinho
-    document.getElementById('btn-fechar-pix').addEventListener('click', async () => {
+    document.getElementById('btn-confirmar-pix').addEventListener('click', async () => {
         await baixarEstoqueNoFirebase();
         modalDiv.remove();
         carrinho = [];
         salvarESincronizar();
         alert('Pagamento confirmado e estoque atualizado com sucesso!');
+    });
+
+    // Apenas fecha o modal e cancela a ação sem alterar o estoque ou limpar o carrinho
+    document.getElementById('btn-cancelar-pix').addEventListener('click', () => {
+        modalDiv.remove();
     });
 }
