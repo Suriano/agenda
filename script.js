@@ -363,7 +363,7 @@ async function baixarEstoqueEFinalizarPedido(metodoPagamento) {
                 if (estoqueAtual >= item.quantidade) {
                     return estoqueAtual - item.quantidade;
                 } else {
-                    return estoqueAtual; // Se não houver estoque suficiente, mantém
+                    return estoqueAtual;
                 }
             });
         }
