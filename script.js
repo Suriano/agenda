@@ -236,7 +236,7 @@ btnLogout.addEventListener('click', async () => {
     alert('Você saiu da sua conta.');
 });
 
-// Adicionar produtos ao carrinho apenas localmente (sem mexer no estoque do banco)
+// Adicionar produtos ao carrinho localmente
 botoesComprar.forEach(botao => {
     botao.addEventListener('click', (evento) => {
         const produtoDiv = evento.target.parentElement;
@@ -336,12 +336,12 @@ function mostrarModalSelecaoPagamento() {
 
     document.getElementById('btn-escolha-pix').addEventListener('click', async () => {
         modalDiv.remove();
-        await baixarEstoqueEFinalizarPedido("Pix");
+        await registrarPedidoAguardandoPagamento("Pix");
     });
 
     document.getElementById('btn-escolha-ml').addEventListener('click', async () => {
         modalDiv.remove();
-        await baixarEstoqueEFinalizarPedido("Mercado Pago");
+        await registrarPedidoAguardandoPagamento("Mercado Pago");
     });
 
     document.getElementById('btn-fechar-escolha').addEventListener('click', () => {
@@ -349,26 +349,12 @@ function mostrarModalSelecaoPagamento() {
     });
 }
 
-// Função centralizada para dar baixa atômica no estoque de cada item do carrinho ao finalizar
-async function baixarEstoqueEFinalizarPedido(metodoPagamento) {
+// Apenas registra o pedido no banco (sem mexer no estoque ainda) e abre a tela de pagamento
+async function registrarPedidoAguardandoPagamento(metodoPagamento) {
     const valorTotalStr = document.getElementById('valor-total').textContent;
 
     try {
-        // Percorre cada item do carrinho e desconta a quantidade comprada do estoque no Firebase
-        for (const item of carrinho) {
-            const produtoEstoqueRef = ref(rtdb, `produtos/${item.id}/estoque`);
-            
-            await runTransaction(produtoEstoqueRef, (estoqueAtual) => {
-                if (estoqueAtual === null) return 0;
-                if (estoqueAtual >= item.quantidade) {
-                    return estoqueAtual - item.quantidade;
-                } else {
-                    return estoqueAtual;
-                }
-            });
-        }
-
-        // Salva o pedido no banco de dados
+        // Salva o pedido no banco de dados com status de aguardando
         await push(ref(rtdb, `pedidos/${usuarioLogado.uid}`), {
             userId: usuarioLogado.uid,
             userEmail: usuarioLogado.email,
@@ -388,12 +374,34 @@ async function baixarEstoqueEFinalizarPedido(metodoPagamento) {
 
             mostrarTelaPagamentoPix(payloadPix, valorTotalStr);
         } else {
+            // Para o Mercado Pago, baixa o estoque imediatamente ao redirecionar para o gateway de pagamento pago
+            await baixarEstoqueNoFirebase();
             await processarPagamentoMercadoLivre(valorTotalStr);
         }
 
     } catch (error) {
-        console.error("Erro ao finalizar pedido e atualizar estoque:", error);
+        console.error("Erro ao registrar pedido:", error);
         alert("Erro ao processar a finalização da compra.");
+    }
+}
+
+// Função para dar baixa efetiva no estoque do Firebase
+async function baixarEstoqueNoFirebase() {
+    try {
+        for (const item of carrinho) {
+            const produtoEstoqueRef = ref(rtdb, `produtos/${item.id}/estoque`);
+            
+            await runTransaction(produtoEstoqueRef, (estoqueAtual) => {
+                if (estoqueAtual === null) return 0;
+                if (estoqueAtual >= item.quantidade) {
+                    return estoqueAtual - item.quantidade;
+                } else {
+                    return estoqueAtual;
+                }
+            });
+        }
+    } catch (error) {
+        console.error("Erro ao atualizar estoque:", error);
     }
 }
 
@@ -501,7 +509,7 @@ function mostrarTelaPagamentoPix(payload, valor) {
             
             <button id="btn-copiar" style="background: #2563eb; color: white; border: none; padding: 10px; width: 100%; border-radius: 6px; font-weight: 600; cursor: pointer; margin-bottom: 8px;">📋 Copiar Código Pix</button>
             
-            <button id="btn-fechar-pix" style="background: #dc2626; color: white; border: none; padding: 10px; width: 100%; border-radius: 6px; font-weight: 600; cursor: pointer;">Fechar / Já Paguei</button>
+            <button id="btn-fechar-pix" style="background: #059669; color: white; border: none; padding: 10px; width: 100%; border-radius: 6px; font-weight: 600; cursor: pointer;">✅ Já Paguei / Confirmar</button>
         </div>
     `;
 
@@ -520,9 +528,12 @@ function mostrarTelaPagamentoPix(payload, valor) {
         alert('Código Pix copiado com sucesso!');
     });
 
-    document.getElementById('btn-fechar-pix').addEventListener('click', () => {
+    // Ao confirmar o pagamento do Pix, desconta o estoque e limpa o carrinho
+    document.getElementById('btn-fechar-pix').addEventListener('click', async () => {
+        await baixarEstoqueNoFirebase();
         modalDiv.remove();
         carrinho = [];
         salvarESincronizar();
+        alert('Pagamento confirmado e estoque atualizado com sucesso!');
     });
 }
