@@ -66,7 +66,6 @@ function ouvirEstoqueEmTempoReal() {
         const dados = snapshot.val();
         if (!dados) return;
 
-        // Para cada produto cadastrado no banco, atualiza o span correspondente
         Object.keys(dados).forEach(id => {
             const qtdEstoque = dados[id].estoque;
             const spanEstoque = document.getElementById(`estoque-${id}`);
@@ -237,37 +236,16 @@ btnLogout.addEventListener('click', async () => {
     alert('Você saiu da sua conta.');
 });
 
-// Adicionar produtos ao carrinho controlando a baixa atômica no banco de dados
+// Adicionar produtos ao carrinho apenas localmente (sem mexer no estoque do banco)
 botoesComprar.forEach(botao => {
-    botao.addEventListener('click', async (evento) => {
+    botao.addEventListener('click', (evento) => {
         const produtoDiv = evento.target.parentElement;
         const id = produtoDiv.getAttribute('data-id');
         const nome = produtoDiv.getAttribute('data-nome');
         const preco = parseFloat(produtoDiv.getAttribute('data-preco'));
         const imagem = produtoDiv.getAttribute('data-img');
 
-        const produtoEstoqueRef = ref(rtdb, `produtos/${id}/estoque`);
-
-        try {
-            // Utiliza transação no Firebase para diminuir o estoque com segurança atômica
-            const resultado = await runTransaction(produtoEstoqueRef, (estoqueAtual) => {
-                if (estoqueAtual === null) return 0;
-                if (estoqueAtual > 0) {
-                    return estoqueAtual - 1;
-                } else {
-                    return; // Cancela transação se o estoque for 0
-                }
-            });
-
-            if (resultado.committed) {
-                adicionarAoCarrinho(id, nome, preco, imagem);
-            } else {
-                alert('Desculpe, este produto acabou de esgotar!');
-            }
-        } catch (error) {
-            console.error("Erro ao atualizar estoque:", error);
-            alert("Erro ao processar compra do produto.");
-        }
+        adicionarAoCarrinho(id, nome, preco, imagem);
     });
 });
 
@@ -356,14 +334,14 @@ function mostrarModalSelecaoPagamento() {
 
     document.body.appendChild(modalDiv);
 
-    document.getElementById('btn-escolha-pix').addEventListener('click', () => {
+    document.getElementById('btn-escolha-pix').addEventListener('click', async () => {
         modalDiv.remove();
-        processarPagamentoPix(valorTotalStr);
+        await baixarEstoqueEFinalizarPedido("Pix");
     });
 
-    document.getElementById('btn-escolha-ml').addEventListener('click', () => {
+    document.getElementById('btn-escolha-ml').addEventListener('click', async () => {
         modalDiv.remove();
-        processarPagamentoMercadoLivre();
+        await baixarEstoqueEFinalizarPedido("Mercado Pago");
     });
 
     document.getElementById('btn-fechar-escolha').addEventListener('click', () => {
@@ -371,31 +349,55 @@ function mostrarModalSelecaoPagamento() {
     });
 }
 
-function processarPagamentoPix(valorTotalStr) {
-    const idTransacao = "PEDIDO" + Math.floor(Math.random() * 10000);
-    const minhaChavePix = "28127477818";
-    const meuNome = "Anderson Pinheiro Suriano";
-    const minhaCidade = "SAO PAULO";
-    const payloadPix = gerarPayloadPix(minhaChavePix, meuNome, minhaCidade, valorTotalStr, idTransacao);
+// Função centralizada para dar baixa atômica no estoque de cada item do carrinho ao finalizar
+async function baixarEstoqueEFinalizarPedido(metodoPagamento) {
+    const valorTotalStr = document.getElementById('valor-total').textContent;
 
-    mostrarTelaPagamentoPix(payloadPix, valorTotalStr);
+    try {
+        // Percorre cada item do carrinho e desconta a quantidade comprada do estoque no Firebase
+        for (const item of carrinho) {
+            const produtoEstoqueRef = ref(rtdb, `produtos/${item.id}/estoque`);
+            
+            await runTransaction(produtoEstoqueRef, (estoqueAtual) => {
+                if (estoqueAtual === null) return 0;
+                if (estoqueAtual >= item.quantidade) {
+                    return estoqueAtual - item.quantidade;
+                } else {
+                    return estoqueAtual; // Se não houver estoque suficiente, mantém
+                }
+            });
+        }
 
-    push(ref(rtdb, `pedidos/${usuarioLogado.uid}`), {
-        userId: usuarioLogado.uid,
-        userEmail: usuarioLogado.email,
-        itens: carrinho,
-        total: parseFloat(valorTotalStr),
-        metodoPagamento: "Pix",
-        status: "Aguardando Pagamento",
-        criadoEm: obterDataHoraBrasil()
-    }).catch(e => {
-        console.error("Erro ao salvar no banco:", e.message);
-    });
+        // Salva o pedido no banco de dados
+        await push(ref(rtdb, `pedidos/${usuarioLogado.uid}`), {
+            userId: usuarioLogado.uid,
+            userEmail: usuarioLogado.email,
+            itens: carrinho,
+            total: parseFloat(valorTotalStr),
+            metodoPagamento: metodoPagamento,
+            status: "Aguardando Pagamento",
+            criadoEm: obterDataHoraBrasil()
+        });
+
+        if (metodoPagamento === "Pix") {
+            const idTransacao = "PEDIDO" + Math.floor(Math.random() * 10000);
+            const minhaChavePix = "28127477818";
+            const meuNome = "Anderson Pinheiro Suriano";
+            const minhaCidade = "SAO PAULO";
+            const payloadPix = gerarPayloadPix(minhaChavePix, meuNome, minhaCidade, valorTotalStr, idTransacao);
+
+            mostrarTelaPagamentoPix(payloadPix, valorTotalStr);
+        } else {
+            await processarPagamentoMercadoLivre(valorTotalStr);
+        }
+
+    } catch (error) {
+        console.error("Erro ao finalizar pedido e atualizar estoque:", error);
+        alert("Erro ao processar a finalização da compra.");
+    }
 }
 
-async function processarPagamentoMercadoLivre() {
-    const valorTotalStr = document.getElementById('valor-total').textContent;
-    
+async function processarPagamentoMercadoLivre(valorTotalStr) {
     const originalText = btnFinalizar.innerHTML;
     btnFinalizar.innerHTML = `<span class="spinner"></span> A gerar Mercado Livre...`;
     btnFinalizar.disabled = true;
@@ -413,18 +415,6 @@ async function processarPagamentoMercadoLivre() {
         const dados = await resposta.json();
 
         if (dados.init_point) {
-            push(ref(rtdb, `pedidos/${usuarioLogado.uid}`), {
-                userId: usuarioLogado.uid,
-                userEmail: usuarioLogado.email,
-                itens: carrinho,
-                total: parseFloat(valorTotalStr),
-                metodoPagamento: "Mercado Pago",
-                status: "Aguardando Pagamento",
-                criadoEm: obterDataHoraBrasil()
-            }).catch(e => {
-                console.error("Erro ao salvar no banco:", e.message);
-            });
-
             window.location.href = dados.init_point;
         } else {
             alert('Não foi possível gerar o link de pagamento.');
