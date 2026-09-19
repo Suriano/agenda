@@ -1,7 +1,7 @@
 // Importando o Firebase SDK via CDN Modular ESM (Auth, App e Realtime Database)
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-import { getDatabase, ref, push } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+import { getDatabase, ref, push, onValue, runTransaction } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
 // Configurações do seu projeto Firebase
 const firebaseConfig = {
@@ -57,6 +57,39 @@ let indiceImagemAtual = 0;
 let modoCadastro = false;
 
 atualizarCarrinho();
+ouvirEstoqueEmTempoReal();
+
+// Função para escutar e atualizar o estoque em tempo real na tela
+function ouvirEstoqueEmTempoReal() {
+    const produtosRef = ref(rtdb, 'produtos');
+    onValue(produtosRef, (snapshot) => {
+        const dados = snapshot.val();
+        if (!dados) return;
+
+        // Para cada produto cadastrado no banco, atualiza o span correspondente
+        Object.keys(dados).forEach(id => {
+            const qtdEstoque = dados[id].estoque;
+            const spanEstoque = document.getElementById(`estoque-${id}`);
+            const btnComprar = document.getElementById(`btn-comprar-${id}`);
+
+            if (spanEstoque) {
+                spanEstoque.textContent = qtdEstoque;
+            }
+
+            if (btnComprar) {
+                if (qtdEstoque <= 0) {
+                    btnComprar.disabled = true;
+                    btnComprar.style.background = "#9ca3af";
+                    btnComprar.textContent = "Esgotado";
+                } else {
+                    btnComprar.disabled = false;
+                    btnComprar.style.background = "";
+                    btnComprar.textContent = "Comprar";
+                }
+            }
+        });
+    });
+}
 
 // Função auxiliar para obter a data e hora atual do Brasil (Brasília)
 function obterDataHoraBrasil() {
@@ -204,15 +237,37 @@ btnLogout.addEventListener('click', async () => {
     alert('Você saiu da sua conta.');
 });
 
+// Adicionar produtos ao carrinho controlando a baixa atômica no banco de dados
 botoesComprar.forEach(botao => {
-    botao.addEventListener('click', (evento) => {
+    botao.addEventListener('click', async (evento) => {
         const produtoDiv = evento.target.parentElement;
         const id = produtoDiv.getAttribute('data-id');
         const nome = produtoDiv.getAttribute('data-nome');
         const preco = parseFloat(produtoDiv.getAttribute('data-preco'));
         const imagem = produtoDiv.getAttribute('data-img');
 
-        adicionarAoCarrinho(id, nome, preco, imagem);
+        const produtoEstoqueRef = ref(rtdb, `produtos/${id}/estoque`);
+
+        try {
+            // Utiliza transação no Firebase para diminuir o estoque com segurança atômica
+            const resultado = await runTransaction(produtoEstoqueRef, (estoqueAtual) => {
+                if (estoqueAtual === null) return 0;
+                if (estoqueAtual > 0) {
+                    return estoqueAtual - 1;
+                } else {
+                    return; // Cancela transação se o estoque for 0
+                }
+            });
+
+            if (resultado.committed) {
+                adicionarAoCarrinho(id, nome, preco, imagem);
+            } else {
+                alert('Desculpe, este produto acabou de esgotar!');
+            }
+        } catch (error) {
+            console.error("Erro ao atualizar estoque:", error);
+            alert("Erro ao processar compra do produto.");
+        }
     });
 });
 
@@ -260,7 +315,7 @@ window.removerItem = function(index) {
     salvarESincronizar();
 }
 
-// Botão Finalizar Compra: Exibe a escolha entre Pix ou Mercado Livre (Mercado Pago)
+// Botão Finalizar Compra
 btnFinalizar.addEventListener('click', () => {
     if (carrinho.length === 0) {
         alert('O seu carrinho está vazio!');
@@ -276,7 +331,6 @@ btnFinalizar.addEventListener('click', () => {
     mostrarModalSelecaoPagamento();
 });
 
-// Modal para escolher a forma de pagamento
 function mostrarModalSelecaoPagamento() {
     const modalExistente = document.getElementById('modal-selecao-pagamento');
     if (modalExistente) modalExistente.remove();
@@ -317,7 +371,6 @@ function mostrarModalSelecaoPagamento() {
     });
 }
 
-// Fluxo de Pix
 function processarPagamentoPix(valorTotalStr) {
     const idTransacao = "PEDIDO" + Math.floor(Math.random() * 10000);
     const minhaChavePix = "28127477818";
@@ -327,7 +380,6 @@ function processarPagamentoPix(valorTotalStr) {
 
     mostrarTelaPagamentoPix(payloadPix, valorTotalStr);
 
-    // Salvando no Firebase com data/hora ajustada para o Brasil
     push(ref(rtdb, `pedidos/${usuarioLogado.uid}`), {
         userId: usuarioLogado.uid,
         userEmail: usuarioLogado.email,
@@ -338,11 +390,9 @@ function processarPagamentoPix(valorTotalStr) {
         criadoEm: obterDataHoraBrasil()
     }).catch(e => {
         console.error("Erro ao salvar no banco:", e.message);
-        alert("Erro ao gravar pedido no Firebase: " + e.message);
     });
 }
 
-// Fluxo de Mercado Livre / Mercado Pago via Render
 async function processarPagamentoMercadoLivre() {
     const valorTotalStr = document.getElementById('valor-total').textContent;
     
@@ -363,7 +413,6 @@ async function processarPagamentoMercadoLivre() {
         const dados = await resposta.json();
 
         if (dados.init_point) {
-            // Salvando no Firebase com data/hora ajustada para o Brasil
             push(ref(rtdb, `pedidos/${usuarioLogado.uid}`), {
                 userId: usuarioLogado.uid,
                 userEmail: usuarioLogado.email,
@@ -393,7 +442,6 @@ async function processarPagamentoMercadoLivre() {
     }
 }
 
-// Função para gerar o código Pix Copia e Cola
 function gerarPayloadPix(chavePix, nomeRecebedor, cidadeRecebedor, valor, identificador) {
     const formatField = (id, value) => {
         const len = String(value.length).padStart(2, '0');
