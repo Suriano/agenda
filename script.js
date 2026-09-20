@@ -23,12 +23,20 @@ const googleProvider = new GoogleAuthProvider();
 
 let carrinho = JSON.parse(localStorage.getItem('carrinho')) || [];
 let usuarioLogado = null;
+let valorFreteAtual = 0; // Valor atual do frete selecionado
 
 const botoesComprar = document.querySelectorAll('.btn-comprar');
 const listaCarrinho = document.getElementById('lista-carrinho');
+const valorSubtotal = document.getElementById('valor-subtotal');
+const valorFreteSpan = document.getElementById('valor-frete');
 const valorTotal = document.getElementById('valor-total');
 const contadorCarrinho = document.getElementById('contador-carrinho');
 const btnFinalizar = document.getElementById('btn-finalizar');
+
+// Elementos de Frete
+const inputCep = document.getElementById('input-cep');
+const btnCalcularCep = document.getElementById('btn-calcular-cep');
+const resultadoFrete = document.getElementById('resultado-frete');
 
 // Elementos da UI de Autenticação
 const modalLogin = document.getElementById('modal-login');
@@ -59,7 +67,7 @@ let modoCadastro = false;
 atualizarCarrinho();
 ouvirEstoqueEmTempoReal();
 
-// Função customizada para substituir o alert() padrão do navegador por um modal bonito
+// Função customizada para substituir o alert() padrão por um modal bonito
 function mostrarMensagemModal(mensagem, titulo = "Aviso") {
     const modalAntigo = document.getElementById('modal-mensagem-customizada');
     if (modalAntigo) modalAntigo.remove();
@@ -69,7 +77,7 @@ function mostrarMensagemModal(mensagem, titulo = "Aviso") {
     modalDiv.style.cssText = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); display:flex; justify-content:center; align-items:center; z-index:3000; font-family:'Inter', sans-serif;";
     
     modalDiv.innerHTML = `
-        <div style="background:white; padding:25px 30px; border-radius:16px; text-align:center; max-width:360px; width:90%; box-shadow: 0 10px 25px rgba(0,0,0,0.2); animation: scaleIn 0.2s ease-in-out;">
+        <div style="background:white; padding:25px 30px; border-radius:16px; text-align:center; max-width:360px; width:90%; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
             <h3 style="margin-bottom: 10px; color: #111; font-size: 18px; font-weight: 700;">${titulo}</h3>
             <p style="color: #4b5563; font-size: 14px; margin-bottom: 20px; line-height: 1.5;">${mensagem}</p>
             <button id="btn-fechar-msg" style="background: #059669; color: white; border: none; padding: 10px 20px; width: 100%; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 14px;">OK</button>
@@ -88,6 +96,58 @@ function mostrarMensagemModal(mensagem, titulo = "Aviso") {
         }
     });
 }
+
+// Lógica de Cálculo de Frete baseada no CEP
+btnCalcularCep.addEventListener('click', async () => {
+    let cepLimpo = inputCep.value.replace(/\D/g, '');
+
+    if (cepLimpo.length !== 8) {
+        mostrarMensagemModal('Digite um CEP válido com 8 dígitos.', 'CEP Inválido');
+        return;
+    }
+
+    resultadoFrete.textContent = "Calculando frete...";
+    resultadoFrete.style.color = "#2563eb";
+
+    try {
+        const resposta = await fetch(`https://viacep.com.br/ws/${cepLimpo}/json/`);
+        const dados = await resposta.json();
+
+        if (dados.erro) {
+            resultadoFrete.textContent = "CEP não encontrado.";
+            resultadoFrete.style.color = "#dc2626";
+            valorFreteAtual = 0;
+            atualizarCarrinho();
+            return;
+        }
+
+        // Exemplo de Regras de Frete por Região/Estado
+        // Você pode personalizar os valores e regiões conforme a sua necessidade:
+        let uf = dados.uf;
+        let cidade = dados.localidade;
+
+        if (cidade.toLowerCase() === "são paulo") {
+            valorFreteAtual = 15.00; // Frete local para a mesma cidade
+            resultadoFrete.textContent = `Entrega em ${cidade} (${uf}) - R$ 15,00`;
+        } else if (uf === "SP") {
+            valorFreteAtual = 25.00; // Frete estadual
+            resultadoFrete.textContent = `Entrega no Estado de SP - R$ 25,00`;
+        } else {
+            valorFreteAtual = 45.00; // Frete interestadual padrão
+            resultadoFrete.textContent = `Entrega para ${uf} - R$ 45,00`;
+        }
+
+        resultadoFrete.style.color = "#059669";
+        atualizarCarrinho();
+
+    } catch (error) {
+        console.error("Erro ao consultar CEP:", error);
+        resultadoFrete.textContent = "Erro ao calcular o frete. Tente novamente.";
+        resultadoFrete.style.color = "#dc2626";
+        valorFreteAtual = 0;
+        atualizarCarrinho();
+    }
+});
 
 // Função para escutar e atualizar o estoque em tempo real na tela
 function ouvirEstoqueEmTempoReal() {
@@ -291,11 +351,11 @@ function adicionarAoCarrinho(id, nome, preco, imagem) {
 
 function atualizarCarrinho() {
     listaCarrinho.innerHTML = '';
-    let total = 0;
+    let subtotal = 0;
     let quantidadeTotal = 0;
 
     carrinho.forEach((item, index) => {
-        total += item.preco * item.quantidade;
+        subtotal += item.preco * item.quantidade;
         quantidadeTotal += item.quantidade;
 
         const li = document.createElement('li');
@@ -309,7 +369,11 @@ function atualizarCarrinho() {
         listaCarrinho.appendChild(li);
     });
 
-    valorTotal.textContent = total.toFixed(2);
+    const totalGeral = subtotal + valorFreteAtual;
+
+    valorSubtotal.textContent = subtotal.toFixed(2);
+    valorFreteSpan.textContent = valorFreteAtual.toFixed(2);
+    valorTotal.textContent = totalGeral.toFixed(2);
     contadorCarrinho.textContent = quantidadeTotal;
 }
 
@@ -352,7 +416,7 @@ function mostrarModalSelecaoPagamento() {
     modalDiv.innerHTML = `
         <div style="background:white; padding:30px; border-radius:16px; text-align:center; max-width:380px; width:90%; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
             <h3 style="margin-bottom: 8px; color: #111;">Escolha a Forma de Pagamento</h3>
-            <p style="color: #666; font-size: 14px; margin-bottom: 20px;">Total: <strong style="color: #059669; font-size: 18px;">R$ ${valorTotalStr}</strong></p>
+            <p style="color: #666; font-size: 14px; margin-bottom: 20px;">Total (com frete): <strong style="color: #059669; font-size: 18px;">R$ ${valorTotalStr}</strong></p>
             
             <button id="btn-escolha-pix" style="background: #059669; color: white; border: none; padding: 12px; width: 100%; border-radius: 8px; font-weight: 600; cursor: pointer; margin-bottom: 12px; display:flex; align-items:center; justify-content:center; gap:8px;">🟢 Pagar com Pix</button>
             
@@ -379,15 +443,20 @@ function mostrarModalSelecaoPagamento() {
     });
 }
 
-// Apenas registra o pedido no banco (sem mexer no estoque ainda) e abre a tela de pagamento
+// Apenas registra o pedido no banco e abre a tela de pagamento
 async function registrarPedidoAguardandoPagamento(metodoPagamento) {
+    const valorSubtotalStr = document.getElementById('valor-subtotal').textContent;
     const valorTotalStr = document.getElementById('valor-total').textContent;
+    const cepInformado = inputCep.value.trim();
 
     try {
         await push(ref(rtdb, `pedidos/${usuarioLogado.uid}`), {
             userId: usuarioLogado.uid,
             userEmail: usuarioLogado.email,
             itens: carrinho,
+            subtotal: parseFloat(valorSubtotalStr),
+            frete: valorFreteAtual,
+            cepEntrega: cepInformado || "Não informado",
             total: parseFloat(valorTotalStr),
             metodoPagamento: metodoPagamento,
             status: "Aguardando Pagamento",
@@ -528,7 +597,7 @@ function mostrarTelaPagamentoPix(payload, valor) {
     modalDiv.innerHTML = `
         <div style="background:white; padding:30px; border-radius:16px; text-align:center; max-width:400px; width:90%; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
             <h3 style="margin-bottom: 10px; color: #111; font-size: 20px;">Pague com Pix</h3>
-            <p style="color: #666; font-size: 14px; margin-bottom: 15px;">Total a pagar: <strong style="color: #059669; font-size: 18px;">R$ ${valor}</strong></p>
+            <p style="color: #666; font-size: 14px; margin-bottom: 15px;">Total a pagar (com frete): <strong style="color: #059669; font-size: 18px;">R$ ${valor}</strong></p>
             
             <div id="qrcode-container" style="margin: 15px auto; display:flex; justify-content:center; background: #f9fafb; padding: 15px; border-radius: 12px; border: 1px solid #e5e7eb; width: fit-content;"></div>
             
@@ -559,16 +628,17 @@ function mostrarTelaPagamentoPix(payload, valor) {
         mostrarMensagemModal('Código Pix copiado com sucesso!', 'Sucesso');
     });
 
-    // Ao confirmar o pagamento do Pix, desconta o estoque e limpa o carrinho
     document.getElementById('btn-confirmar-pix').addEventListener('click', async () => {
         await baixarEstoqueNoFirebase();
         modalDiv.remove();
         carrinho = [];
+        valorFreteAtual = 0;
+        inputCep.value = '';
+        resultadoFrete.textContent = '';
         salvarESincronizar();
         mostrarMensagemModal('Pagamento confirmado e estoque atualizado com sucesso!', 'Sucesso');
     });
 
-    // Apenas fecha o modal e cancela a ação sem alterar o estoque ou limpar o carrinho
     document.getElementById('btn-cancelar-pix').addEventListener('click', () => {
         modalDiv.remove();
     });
