@@ -97,16 +97,28 @@ function mostrarMensagemModal(mensagem, titulo = "Aviso") {
     });
 }
 
-// Lógica de Cálculo de Frete baseada no CEP
+// Formatação automática do CEP (00000-000) enquanto o utilizador digita
+inputCep.addEventListener('input', (e) => {
+    let valor = e.target.value.replace(/\D/g, '');
+    if (valor.length > 5) {
+        valor = valor.substring(0, 5) + '-' + valor.substring(5, 8);
+    }
+    e.target.value = valor;
+});
+
+// Lógica rigorosa de Cálculo de Frete com validação de campo vazio
 btnCalcularCep.addEventListener('click', async () => {
     let cepLimpo = inputCep.value.replace(/\D/g, '');
 
-    if (cepLimpo.length !== 8) {
-        mostrarMensagemModal('Digite um CEP válido com 8 dígitos.', 'CEP Inválido');
+    // Validação para não deixar consultar vazio ou incompleto
+    if (!inputCep.value.trim() || cepLimpo.length !== 8) {
+        mostrarMensagemModal('Por favor, digite um CEP válido com 8 dígitos antes de calcular.', 'Campo Obrigatório');
+        resultadoFrete.textContent = "Digite um CEP válido.";
+        resultadoFrete.style.color = "#dc2626";
         return;
     }
 
-    resultadoFrete.textContent = "Calculando frete...";
+    resultadoFrete.textContent = "A calcular frete...";
     resultadoFrete.style.color = "#2563eb";
 
     try {
@@ -121,19 +133,18 @@ btnCalcularCep.addEventListener('click', async () => {
             return;
         }
 
-        // Exemplo de Regras de Frete por Região/Estado
-        // Você pode personalizar os valores e regiões conforme a sua necessidade:
         let uf = dados.uf;
         let cidade = dados.localidade;
 
+        // Regras geográficas de frete personalizáveis
         if (cidade.toLowerCase() === "são paulo") {
-            valorFreteAtual = 15.00; // Frete local para a mesma cidade
+            valorFreteAtual = 15.00;
             resultadoFrete.textContent = `Entrega em ${cidade} (${uf}) - R$ 15,00`;
         } else if (uf === "SP") {
-            valorFreteAtual = 25.00; // Frete estadual
+            valorFreteAtual = 25.00;
             resultadoFrete.textContent = `Entrega no Estado de SP - R$ 25,00`;
         } else {
-            valorFreteAtual = 45.00; // Frete interestadual padrão
+            valorFreteAtual = 45.00;
             resultadoFrete.textContent = `Entrega para ${uf} - R$ 45,00`;
         }
 
