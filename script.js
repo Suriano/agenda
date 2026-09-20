@@ -59,6 +59,36 @@ let modoCadastro = false;
 atualizarCarrinho();
 ouvirEstoqueEmTempoReal();
 
+// Função customizada para substituir o alert() padrão do navegador por um modal bonito
+function mostrarMensagemModal(mensagem, titulo = "Aviso") {
+    const modalAntigo = document.getElementById('modal-mensagem-customizada');
+    if (modalAntigo) modalAntigo.remove();
+
+    const modalDiv = document.createElement('div');
+    modalDiv.id = 'modal-mensagem-customizada';
+    modalDiv.style.cssText = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); display:flex; justify-content:center; align-items:center; z-index:3000; font-family:'Inter', sans-serif;";
+    
+    modalDiv.innerHTML = `
+        <div style="background:white; padding:25px 30px; border-radius:16px; text-align:center; max-width:360px; width:90%; box-shadow: 0 10px 25px rgba(0,0,0,0.2); animation: scaleIn 0.2s ease-in-out;">
+            <h3 style="margin-bottom: 10px; color: #111; font-size: 18px; font-weight: 700;">${titulo}</h3>
+            <p style="color: #4b5563; font-size: 14px; margin-bottom: 20px; line-height: 1.5;">${mensagem}</p>
+            <button id="btn-fechar-msg" style="background: #059669; color: white; border: none; padding: 10px 20px; width: 100%; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 14px;">OK</button>
+        </div>
+    `;
+
+    document.body.appendChild(modalDiv);
+
+    document.getElementById('btn-fechar-msg').addEventListener('click', () => {
+        modalDiv.remove();
+    });
+
+    modalDiv.addEventListener('click', (e) => {
+        if (e.target === modalDiv) {
+            modalDiv.remove();
+        }
+    });
+}
+
 // Função para escutar e atualizar o estoque em tempo real na tela
 function ouvirEstoqueEmTempoReal() {
     const produtosRef = ref(rtdb, 'produtos');
@@ -199,10 +229,10 @@ function traduzirErroFirebase(errorCode) {
 btnGoogle.addEventListener('click', async () => {
     try {
         await signInWithPopup(auth, googleProvider);
-        alert('Login com Google realizado com sucesso!');
+        mostrarMensagemModal('Login com Google realizado com sucesso!', 'Sucesso');
         modalLogin.style.display = 'none';
     } catch (error) {
-        alert(traduzirErroFirebase(error.code));
+        mostrarMensagemModal(traduzirErroFirebase(error.code), 'Erro');
     }
 });
 
@@ -211,29 +241,29 @@ btnAcaoAuth.addEventListener('click', async () => {
     const senha = inputSenha.value.trim();
 
     if (!email || !senha) {
-        alert('Preencha e-mail e senha!');
+        mostrarMensagemModal('Preencha e-mail e senha!', 'Atenção');
         return;
     }
 
     try {
         if (modoCadastro) {
             await createUserWithEmailAndPassword(auth, email, senha);
-            alert('Conta criada com sucesso!');
+            mostrarMensagemModal('Conta criada com sucesso!', 'Sucesso');
         } else {
             await signInWithEmailAndPassword(auth, email, senha);
-            alert('Login realizado com sucesso!');
+            mostrarMensagemModal('Login realizado com sucesso!', 'Sucesso');
         }
         modalLogin.style.display = 'none';
         inputEmail.value = '';
         inputSenha.value = '';
     } catch (error) {
-        alert(traduzirErroFirebase(error.code));
+        mostrarMensagemModal(traduzirErroFirebase(error.code), 'Erro');
     }
 });
 
 btnLogout.addEventListener('click', async () => {
     await signOut(auth);
-    alert('Você saiu da sua conta.');
+    mostrarMensagemModal('Você saiu da sua conta.', 'Informação');
 });
 
 // Adicionar produtos ao carrinho localmente
@@ -296,12 +326,12 @@ window.removerItem = function(index) {
 // Botão Finalizar Compra
 btnFinalizar.addEventListener('click', () => {
     if (carrinho.length === 0) {
-        alert('O seu carrinho está vazio!');
+        mostrarMensagemModal('O seu carrinho está vazio!', 'Carrinho Vazio');
         return;
     }
 
     if (!usuarioLogado) {
-        alert('Precisa de estar autenticado para finalizar a compra!');
+        mostrarMensagemModal('Precisa de estar autenticado para finalizar a compra!', 'Autenticação Necessária');
         modalLogin.style.display = 'flex';
         return;
     }
@@ -321,7 +351,7 @@ function mostrarModalSelecaoPagamento() {
     
     modalDiv.innerHTML = `
         <div style="background:white; padding:30px; border-radius:16px; text-align:center; max-width:380px; width:90%; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
-            <h3>Escolha a Forma de Pagamento</h3>
+            <h3 style="margin-bottom: 8px; color: #111;">Escolha a Forma de Pagamento</h3>
             <p style="color: #666; font-size: 14px; margin-bottom: 20px;">Total: <strong style="color: #059669; font-size: 18px;">R$ ${valorTotalStr}</strong></p>
             
             <button id="btn-escolha-pix" style="background: #059669; color: white; border: none; padding: 12px; width: 100%; border-radius: 8px; font-weight: 600; cursor: pointer; margin-bottom: 12px; display:flex; align-items:center; justify-content:center; gap:8px;">🟢 Pagar com Pix</button>
@@ -379,7 +409,7 @@ async function registrarPedidoAguardandoPagamento(metodoPagamento) {
 
     } catch (error) {
         console.error("Erro ao registrar pedido:", error);
-        alert("Erro ao processar a finalização da compra.");
+        mostrarMensagemModal("Erro ao processar a finalização da compra.", "Erro");
     }
 }
 
@@ -423,12 +453,12 @@ async function processarPagamentoMercadoLivre(valorTotalStr) {
         if (dados.init_point) {
             window.location.href = dados.init_point;
         } else {
-            alert('Não foi possível gerar o link de pagamento.');
+            mostrarMensagemModal('Não foi possível gerar o link de pagamento.', 'Erro');
             restaurarBotao();
         }
     } catch (error) {
         console.error('Erro:', error);
-        alert('Erro de conexão com o servidor de pagamento.');
+        mostrarMensagemModal('Erro de conexão com o servidor de pagamento.', 'Erro');
         restaurarBotao();
     }
 
@@ -526,7 +556,7 @@ function mostrarTelaPagamentoPix(payload, valor) {
         const inputCopia = document.getElementById('pix-copia-cola');
         inputCopia.select();
         navigator.clipboard.writeText(inputCopia.value);
-        alert('Código Pix copiado com sucesso!');
+        mostrarMensagemModal('Código Pix copiado com sucesso!', 'Sucesso');
     });
 
     // Ao confirmar o pagamento do Pix, desconta o estoque e limpa o carrinho
@@ -535,7 +565,7 @@ function mostrarTelaPagamentoPix(payload, valor) {
         modalDiv.remove();
         carrinho = [];
         salvarESincronizar();
-        alert('Pagamento confirmado e estoque atualizado com sucesso!');
+        mostrarMensagemModal('Pagamento confirmado e estoque atualizado com sucesso!', 'Sucesso');
     });
 
     // Apenas fecha o modal e cancela a ação sem alterar o estoque ou limpar o carrinho
