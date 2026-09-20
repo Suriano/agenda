@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minha Loja Virtual</title>
+    <!-- Vinculando o CSS -->
+    <link rel="stylesheet" href="style.css">
+    <!-- Biblioteca de QR Code -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        /* Estilos adicionais recomendados para o novo cabeçalho mobile */
+        header {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 15px;
+            background-color: #fff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            text-align: center;
+        }
+        .logo-container {
+            margin-bottom: 12px;
+        }
+        .logo-container img {
+            max-height: 50px;
+            width: auto;
+            object-fit: contain;
+        }
+        header h1 {
+            font-size: 1.5rem;
+            margin: 0 0 10px 0;
+        }
+        .user-area {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+        }
+        @media (min-width: 768px) {
+            header {
+                flex-direction: row;
+                justify-content: space-between;
+                padding: 15px 30px;
+            }
+            .logo-container {
+                margin-bottom: 0;
+            }
+            header h1 {
+                margin: 0;
+            }
+            .user-area {
+                width: auto;
+                justify-content: flex-end;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo-container">
+            <!-- Substitua 'img/logo.png' pelo caminho correto da sua imagem de logo -->
+            <img src="img/logodev2.png" alt="Logo SURIANO">
+        </div>
+        <h1>Loja Virtual Suriano</h1>
+        <div class="user-area">
+            <span id="user-info" style="display:none; font-size: 14px; margin-right: 5px;">Olá, <strong id="user-email"></strong></span>
+            <button id="btn-login-modal" style="padding: 6px 12px; font-size: 13px;">Entrar / Cadastrar</button>
+            <button id="btn-logout" style="display:none; background: #dc2626; padding: 6px 12px; font-size: 13px; color: white; border: none; border-radius: 4px;">Sair</button>
+            <div id="carrinho-icone" style="display:inline-block; margin-left: 10px; cursor: pointer; font-weight: 500;">🛒 Carrinho (<span id="contador-carrinho">0</span>)</div>
+        </div>
+    </header>
+
+    <main class="container">
+        <!-- Vitrine de Produtos -->
+        <section class="produtos">
+            <h2>Produtos</h2>
+            
+            <div class="produto" data-id="1" data-nome="Camiseta HTML" data-preco="499.90" data-img="img/3.jpg">
+                <img src="img/3.jpg" alt="Camiseta HTML" class="produto-img" data-galeria="img/1.jpg,img/2.jpg">
+                <div class="produto-info">
+                    <h3>Camiseta Itália</h3>
+                    <p>R$ 499,90</p>
+                    <p style="font-size: 13px; color: #666;">Estoque: <span id="estoque-1">Carregando...</span></p>
+                </div>
+                <button class="btn-comprar" id="btn-comprar-1">Comprar</button>
+            </div>
+
+            <div class="produto" data-id="2" data-nome="Camiseta CSS" data-preco="499.90" data-img="img/2.jpg">
+                <img src="img/2.jpg" alt="Camiseta CSS" class="produto-img" data-galeria="img/3.jpg,img/2.jpg">
+                <div class="produto-info">
+                    <h3>Camiseta Alemanha</h3>
+                    <p>R$ 499,90</p>
+                    <p style="font-size: 13px; color: #666;">Estoque: <span id="estoque-2">Carregando...</span></p>
+                </div>
+                <button class="btn-comprar" id="btn-comprar-2">Comprar</button>
+            </div>
+        </section>
+
+        <!-- Carrinho de Compras -->
+        <section class="carrinho">
+            <h2>Seu Carrinho</h2>
+            <ul id="lista-carrinho">
+                <!-- Itens adicionados via JS -->
+            </ul>
+
+            <!-- Seção de Cálculo de Frete -->
+            <div class="calculo-frete" style="margin: 15px 0; padding: 10px; background: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb;">
+                <label for="input-cep" style="font-size: 13px; font-weight: 600; display: block; margin-bottom: 5px;">Calcular Frete:</label>
+                <div style="display: flex; gap: 8px;">
+                    <input type="text" id="input-cep" placeholder="Digite seu CEP" maxlength="9" style="flex: 1; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px;" />
+                    <button id="btn-calcular-cep" style="padding: 8px 12px; background: #2563eb; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 13px;">Calcular</button>
+                </div>
+                <p id="resultado-frete" style="font-size: 13px; margin-top: 8px; color: #4b5563;"></p>
+            </div>
+
+            <div class="total" style="border-top: 1px solid #e5e7eb; padding-top: 10px;">
+                <p style="font-size: 14px; color: #4b5563;">Subtotal: R$ <span id="valor-subtotal">0.00</span></p>
+                <p style="font-size: 14px; color: #4b5563;">Frete: R$ <span id="valor-frete">0.00</span></p>
+                <p style="font-size: 18px; font-weight: bold; margin-top: 5px;">Total: R$ <span id="valor-total">0.00</span></p>
+            </div>
+            <button id="btn-finalizar" style="margin-top: 10px; width: 100%;">Finalizar Compra</button>
+        </section>
+    </main>
+
+    <!-- Modal de Zoom e Transição de Imagens do Produto -->
+    <div id="modal-zoom" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); justify-content:center; align-items:center; z-index:3000; flex-direction:column;">
+        <span id="btn-fechar-zoom" style="position:absolute; top:20px; right:30px; color:white; font-size:36px; font-weight:bold; cursor:pointer; z-index:3001;">&times;</span>
+        
+        <div class="zoom-container" style="position:relative; display:flex; align-items:center; justify-content:center; max-width:90%; max-height:80vh;">
+            <button id="btn-zoom-ant" class="zoom-nav-btn" style="position:absolute; left:-50px; background:rgba(255,255,255,0.2); color:white; border:none; font-size:24px; padding:10px 15px; cursor:pointer; border-radius:50%;">&#10094;</button>
+            <img id="imagem-zoom-conteudo" src="" alt="Zoom do Produto" style="max-width:100%; max-height:80vh; object-fit:contain; border-radius:8px; box-shadow:0 5px 25px rgba(0,0,0,0.5); transition: opacity 0.3s ease;">
+            <button id="btn-zoom-prox" class="zoom-nav-btn" style="position:absolute; right:-50px; background:rgba(255,255,255,0.2); color:white; border:none; font-size:24px; padding:10px 15px; cursor:pointer; border-radius:50%;">&#10095;</button>
+        </div>
+    </div>
+
+    <!-- Modal de Login / Cadastro -->
+    <div id="modal-login" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); justify-content:center; align-items:center; z-index:2000;">
+        <div style="background:white; padding:30px; border-radius:12px; width:90%; max-width:380px; box-shadow:0 10px 25px rgba(0,0,0,0.2);">
+            <h3 id="titulo-auth" style="margin-bottom:15px; font-size:20px;">Entrar na Loja</h3>
+            
+            <button id="btn-google" style="width:100%; background:#white; color:#374151; border:1px solid #d1d5db; display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:15px; font-weight:500;">
+                <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.13 0-5.78-2.11-6.73-4.96H1.18v3.14C3.17 21.36 7.23 24 12 24z"/><path fill="#FBBC05" d="M5.27 14.24c-.25-.72-.38-1.49-.38-2.24s.13-1.52.38-2.24V6.62H1.18C.43 8.14 0 9.87 0 11.7c0 1.83.43 3.56 1.18 5.08l4.09-3.14z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.23 0 3.17 2.64 1.18 6.62l4.09 3.14c.95-2.85 3.6-4.96 6.73-4.96z"/></svg>
+                Entrar com o Google
+            </button>
+
+            <div style="display:flex; align-items:center; text-align:center; color:#9ca3af; margin-bottom:15px; font-size:12px;">
+                <hr style="flex:1; border:0; border-top:1px solid #e5e7eb;">
+                <span style="padding:0 10px;">ou com e-mail</span>
+                <hr style="flex:1; border:0; border-top:1px solid #e5e7eb;">
+            </div>
+
+            <input type="email" id="auth-email" placeholder="E-mail" style="width:100%; padding:10px; margin-bottom:10px; border:1px solid #d1d5db; border-radius:6px;" />
+            <input type="password" id="auth-senha" placeholder="Senha" style="width:100%; padding:10px; margin-bottom:15px; border:1px solid #d1d5db; border-radius:6px;" />
+            
+            <button id="btn-acao-auth" style="width:100%; margin-bottom:10px;">Entrar</button>
+            <p id="toggle-auth-mode" style="text-align:center; font-size:13px; color:#2563eb; cursor:pointer; margin-bottom:10px;">Não tem uma conta? Cadastre-se</p>
+            <button id="btn-fechar-modal" style="width:100%; background:#6b7280;">Cancelar</button>
+        </div>
+    </div>
+
+    <!-- Vinculando o JavaScript no final da página -->
+    <script type="module" src="script.js"></script>
+</body>
+</html>
