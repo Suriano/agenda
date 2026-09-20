@@ -106,19 +106,19 @@ inputCep.addEventListener('input', (e) => {
     e.target.value = valor;
 });
 
-// Lógica rigorosa de Cálculo de Frete com validação de campo vazio
+// Lógica rigorosa de Cálculo de Frete com validação de campo vazio e exibição do endereço
 btnCalcularCep.addEventListener('click', async () => {
     let cepLimpo = inputCep.value.replace(/\D/g, '');
 
     // Validação para não deixar consultar vazio ou incompleto
     if (!inputCep.value.trim() || cepLimpo.length !== 8) {
         mostrarMensagemModal('Por favor, digite um CEP válido com 8 dígitos antes de calcular.', 'Campo Obrigatório');
-        resultadoFrete.textContent = "Digite um CEP válido.";
+        resultadoFrete.innerHTML = "Digite um CEP válido.";
         resultadoFrete.style.color = "#dc2626";
         return;
     }
 
-    resultadoFrete.textContent = "A calcular frete...";
+    resultadoFrete.innerHTML = "A calcular frete e buscar endereço...";
     resultadoFrete.style.color = "#2563eb";
 
     try {
@@ -126,7 +126,7 @@ btnCalcularCep.addEventListener('click', async () => {
         const dados = await resposta.json();
 
         if (dados.erro) {
-            resultadoFrete.textContent = "CEP não encontrado.";
+            resultadoFrete.innerHTML = "CEP não encontrado.";
             resultadoFrete.style.color = "#dc2626";
             valorFreteAtual = 0;
             atualizarCarrinho();
@@ -135,25 +135,31 @@ btnCalcularCep.addEventListener('click', async () => {
 
         let uf = dados.uf;
         let cidade = dados.localidade;
+        let logradouro = dados.logradouro || "";
+        let bairro = dados.bairro || "";
 
         // Regras geográficas de frete personalizáveis
         if (cidade.toLowerCase() === "são paulo") {
             valorFreteAtual = 15.00;
-            resultadoFrete.textContent = `Entrega em ${cidade} (${uf}) - R$ 15,00`;
         } else if (uf === "SP") {
             valorFreteAtual = 25.00;
-            resultadoFrete.textContent = `Entrega no Estado de SP - R$ 25,00`;
         } else {
             valorFreteAtual = 45.00;
-            resultadoFrete.textContent = `Entrega para ${uf} - R$ 45,00`;
         }
 
-        resultadoFrete.style.color = "#059669";
+        // Montando o texto para exibir o endereço completo abaixo do CEP
+        let enderecoFormatado = logradouro ? `${logradouro} - ${bairro}, ${cidade} - ${uf}` : `${cidade} - ${uf}`;
+
+        resultadoFrete.innerHTML = `
+            <strong style="color: #059669;">Frete: R$ ${valorFreteAtual.toFixed(2)}</strong><br>
+            <span style="font-size: 12px; color: #4b5563;">📍 ${enderecoFormatado}</span>
+        `;
+        resultadoFrete.style.color = "#374151";
         atualizarCarrinho();
 
     } catch (error) {
         console.error("Erro ao consultar CEP:", error);
-        resultadoFrete.textContent = "Erro ao calcular o frete. Tente novamente.";
+        resultadoFrete.innerHTML = "Erro ao calcular o frete. Tente novamente.";
         resultadoFrete.style.color = "#dc2626";
         valorFreteAtual = 0;
         atualizarCarrinho();
@@ -645,7 +651,7 @@ function mostrarTelaPagamentoPix(payload, valor) {
         carrinho = [];
         valorFreteAtual = 0;
         inputCep.value = '';
-        resultadoFrete.textContent = '';
+        resultadoFrete.innerHTML = '';
         salvarESincronizar();
         mostrarMensagemModal('Pagamento confirmado e estoque atualizado com sucesso!', 'Sucesso');
     });
